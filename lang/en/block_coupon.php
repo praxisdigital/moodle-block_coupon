@@ -996,3 +996,9 @@ $string['width'] = 'Width';
 $string['width_help'] = 'This is the width of the PDF in mm. For reference an A4 piece of paper is 210mm wide and a letter is 216mm wide.';
 $string['with-names'] = 'With the following names or identifiers';
 $string['withselectedcoupons'] = 'With selected coupons';
+$string['label:courses_to_show_in_findcourses_dropdown'] = 'Courses to show in find courses dropdown';
+$string['label:courses_to_show_in_findcourses_dropdown_help'] = 'This setting allows you to limit the courses that are shown in the find courses dropdown.<br/>
+You can select one or more courses to show in the dropdown.<br/>
+If you select no courses, all courses will be shown in the dropdown.<br/>
+This setting is useful if you want to limit the courses that can be selected by the user when generating a coupon.<br/>
+If you want to show all courses, you can leave this setting empty.';

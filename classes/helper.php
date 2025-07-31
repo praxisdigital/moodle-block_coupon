@@ -495,13 +495,14 @@ class helper {
      * @param \stdClass $coupon
      * @return array result, keys are courseids, values are course shortnames
      */
-    public static function get_coupon_courses($coupon) {
+    public static function get_coupon_courses($coupon)
+    {
         global $DB;
         $sqls = [];
         $params = [];
-        $sqls[] = 'SELECT c.id,c.shortname FROM {course} c JOIN {block_coupon_courses} cc ON cc.courseid=c.id AND cc.couponid = ?';
+        $sqls[] = 'SELECT c.id, c.shortname, c.fullname FROM {course} c JOIN {block_coupon_courses} cc ON cc.courseid = c.id AND cc.couponid = ?';
         $params[] = $coupon->id;
-        $sqls[] = 'SELECT c.id,c.shortname FROM {block_coupon_cohorts} cc
+        $sqls[] = 'SELECT c.id,c.shortname , c.fullname FROM {block_coupon_cohorts} cc
                 JOIN {enrol} e ON (e.customint1=cc.cohortid AND e.enrol=?)
                 JOIN {course} c ON e.courseid=c.id
                 WHERE cc.couponid = ?';
@@ -519,7 +520,7 @@ class helper {
      */
     public static function get_coupon_cohorts($coupon) {
         global $DB;
-        $sql = 'SELECT c.id, c.shortname, c.fullname
+        $sql = 'SELECT c.id, c.name
                 FROM {block_coupon_cohorts} cc
                 JOIN {cohort} c ON cc.cohortid=c.id
                 WHERE cc.couponid = ?';

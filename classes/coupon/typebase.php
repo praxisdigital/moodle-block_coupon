@@ -46,7 +46,7 @@ abstract class typebase {
     /**
      * @var \stdClass
      */
-    protected $coupon;
+    protected \stdClass $coupon;
 
     /**
      * Get coupon record

@@ -38,6 +38,7 @@
  */
 class block_coupon extends block_base {
 
+    private ?object $course = null;
     /**
      * initializes block
      */

@@ -26,13 +26,17 @@
  * @author      RvD <helpdesk@sebsoft.nl>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+defined('MOODLE_INTERNAL') || die;
+
+require_once("$CFG->libdir/externallib.php");
+
 use block_coupon\helper;
 use core_external\external_api;
 use core_external\external_value;
 use core_external\external_single_structure;
 use core_external\external_multiple_structure;
 use core_external\external_function_parameters;
-use Exception;
+//use Exception;
 
 /**
  * Webservices implementation for block_coupon
@@ -578,6 +582,18 @@ class block_coupon_external extends external_api {
 
         $where = [];
         $qparams = [];
+
+        // Get courses to show in dropdown.
+        $courses_to_show_in_findcourses_dropdown = get_config('block_coupon', 'courses_to_show_in_findcourses_dropdown') ?? '';
+        if (!empty($courses_to_show_in_findcourses_dropdown)) {
+            $courses_to_show_in_findcourses_dropdown = explode(',', $courses_to_show_in_findcourses_dropdown);
+            if (!empty($courses_to_show_in_findcourses_dropdown)) {
+                [$in_sql, $in_params] = $DB->get_in_or_equal($courses_to_show_in_findcourses_dropdown);
+                $where[] = "c.id {$in_sql}";
+                $qparams = [...$qparams, ...$in_params];
+            }
+        }
+
         // Dont include the SITE.
         $where[] = 'c.id <> ' . SITEID;
         $where[] = 'c.visible = 1';
@@ -742,7 +758,7 @@ class block_coupon_external extends external_api {
      * Returns cohorts based on search query.
      *
      * @param string $query search string
-     * @return array $cohorts
+     * @return object $cohorts
      */
     public static function find_cohorts($query) {
         global $CFG;

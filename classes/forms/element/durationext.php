@@ -93,7 +93,8 @@ class durationext extends \MoodleQuickForm_group {
      *
      * @return array unit length in string => string unit name.
      */
-    public function get_units() {
+    public function get_units(): array
+    {
         if (is_null($this->_units)) {
             $this->_units = [
                 604800 => get_string('weeks'),
@@ -110,7 +111,8 @@ class durationext extends \MoodleQuickForm_group {
      * @param int $seconds an amout of time in seconds.
      * @return array associative array ($number => $unit)
      */
-    public function seconds_to_unit($seconds) {
+    public function seconds_to_unit($seconds): array
+    {
         if ($seconds == 0) {
             return [0, $this->_options['defaultunit']];
         }
@@ -125,7 +127,8 @@ class durationext extends \MoodleQuickForm_group {
     /**
      * Override of standard quickforms method to create this element.
      */
-    public function _createElements() { // @codingStandardsIgnoreLine Can't change parent behaviour.
+    public function _createElements(): void
+    { // @codingStandardsIgnoreLine Can't change parent behaviour.
         $attributes = $this->getAttributes();
         if (is_null($attributes)) {
             $attributes = [];
@@ -161,7 +164,8 @@ class durationext extends \MoodleQuickForm_group {
      * @param object $caller calling object
      * @return bool
      */
-    public function onQuickFormEvent($event, $arg, &$caller) { // @codingStandardsIgnoreLine Can't change parent behaviour.
+    public function onQuickFormEvent($event, $arg, &$caller): bool
+    { // @codingStandardsIgnoreLine Can't change parent behaviour.
         $this->setMoodleForm($caller);
         switch ($event) {
             case 'updateValue':
@@ -203,6 +207,7 @@ class durationext extends \MoodleQuickForm_group {
             default:
                 return parent::onQuickFormEvent($event, $arg, $caller);
         }
+        return true;
     }
 
     /**
@@ -210,7 +215,8 @@ class durationext extends \MoodleQuickForm_group {
      *
      * @return string
      */
-    public function toHtml() { // @codingStandardsIgnoreLine Can't change parent behaviour.
+    public function toHtml(): string
+    { // @codingStandardsIgnoreLine Can't change parent behaviour.
         include_once('HTML/QuickForm/Renderer/Default.php');
         $renderer = new HTML_QuickForm_Renderer_Default();
         $renderer->setElementTemplate('{element}');
@@ -222,10 +228,11 @@ class durationext extends \MoodleQuickForm_group {
      * Accepts a renderer
      *
      * @param HTML_QuickForm_Renderer $renderer An HTML_QuickForm_Renderer object
-     * @param boolean $required Whether a group is required
+     * @param bool $required Whether a group is required
      * @param string $error An error message associated with a group
      */
-    public function accept(&$renderer, $required = false, $error = null) {
+    public function accept(&$renderer, $required = false, $error = null): void
+    {
         $renderer->renderElement($this, $required, $error);
     }
 
@@ -237,7 +244,8 @@ class durationext extends \MoodleQuickForm_group {
      * @param  bool  $assoc Not used.
      * @return array field name => value. The value is the time interval in seconds.
      */
-    public function exportValue(&$submitvalues, $assoc = false) { // @codingStandardsIgnoreLine Can't change parent behaviour.
+    public function exportValue(&$submitvalues, $assoc = false): ?array
+    { // @codingStandardsIgnoreLine Can't change parent behaviour.
         // Get the values from all the child elements.
         $valuearray = [];
         foreach ($this->_elements as $element) {
@@ -255,8 +263,12 @@ class durationext extends \MoodleQuickForm_group {
             return $this->_prepareValue(0, $assoc);
         }
 
+        if (!isset($valuearray['number'], $valuearray['timeunit'])) {
+            return $this->_prepareValue(0, $assoc);
+        }
         return $this->_prepareValue(
-                (int) round($valuearray['number'] * $valuearray['timeunit']), $assoc);
+            (int) round($valuearray['number'] * $valuearray['timeunit']), $assoc
+        );
     }
 
 }

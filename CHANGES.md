@@ -1,3 +1,11 @@
+Version 4.4.2 (build 2025073100)
+
+* Fixed php deprecations
+* Updated fork to the latest(2024100103) Sebsoft main branch
+* Fixed some other minor issues
+
+----------
+
 Version 4.4.2 (build 2024100103)
 ** Requiring Moodle 4.5+
 ** Centralized all CI actions to new defaults for Sebsoft

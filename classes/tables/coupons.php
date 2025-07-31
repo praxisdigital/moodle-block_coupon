@@ -65,51 +65,53 @@ class coupons extends \table_sql {
      *
      * @var int
      */
-    protected $ownerid;
+    protected int $ownerid;
 
     /**
      * Filter for coupon display
      *
      * @var int
      */
-    protected $filter;
+    protected int $filter;
     /**
      * Localised delete string
      * @var string
      */
-    protected $strdelete;
+    protected string|\lang_string $strdelete;
     /**
      * Localised delete confirmation string
      * @var string
      */
-    protected $strdeleteconfirm;
+    protected string|\lang_string $strdeleteconfirm;
 
     /**
      *
      * @var \block_coupon\filtering\filtering
      */
-    protected $filtering;
+    protected \block_coupon\filtering\filtering $filtering;
 
     /**
      * Should we render actions at all?
      *
      * @var bool
      */
-    protected $noactions = false;
+    protected bool $noactions = false;
 
     /**
      * Should we use an action menu for the actions?
      *
      * @var bool
      */
-    protected $useactionmenu = true;
+    protected bool $useactionmenu = true;
 
     /**
      * Plugin global configuration
      *
      * @var stdClass
      */
-    protected $config;
+    protected mixed $config;
+
+    protected array $otherusercolumns = [];
 
     /**
      * Get filtering instance
@@ -277,6 +279,7 @@ class coupons extends \table_sql {
                 ', NULL as action';
         $from = '{block_coupon} c ';
         $from .= 'JOIN {user} u ON c.ownerid=u.id ';
+        $from .= 'LEFT JOIN {user} u1 ON c.userid=u1.id ';
         $from .= 'LEFT JOIN {role} r ON c.roleid=r.id ';
         $where = [];
         $params = [];
@@ -345,18 +348,8 @@ class coupons extends \table_sql {
      * @return string time string
      */
     public function col_usedby($row) {
-        global $CFG;
-        // Nasty modification. Does moodle support better methods here at all??
-        $obj = new \stdClass();
-        foreach ($row as $k => $v) {
-            if (stristr($k, 'user_') !== false) {
-                $nk = str_replace('user_', '', $k);
-                $obj->{$nk} = $v;
-            }
-        }
-
-        $url = new \moodle_url($CFG->wwwroot . '/user/profile.php', ['id' => $row->userid]);
-        return \html_writer::link($url, fullname($obj));
+        $url = new \moodle_url('/user/profile.php', ['id' => $row->userid]);
+        return \html_writer::link($url, $row->usedby);
     }
 
     /**
@@ -382,27 +375,6 @@ class coupons extends \table_sql {
         $this->useridfield = $old;
         return $fullname;
     }
-
-    /**
-     * Render visual representation of the 'user' column for use in the table
-     *
-     * @param \stdClass $row
-     * @return string time string
-    public function col_usedby($row) {
-        // This is a nasty hack, but it works.
-        $mrow = new \stdClass;
-        $mrow->userid = $row->userid;
-        $match = null;
-        foreach ($row as $k => $v) {
-            $mrow->{$k} = $v;
-        }
-        $old = $this->useridfield;
-        $this->useridfield = 'userid';
-        $fullname = parent::col_fullname($mrow);
-        $this->useridfield = $old;
-        return $fullname;
-    }
-     */
 
     /**
      * Render visual representation of the 'enrolperiod' column for use in the table
