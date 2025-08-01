@@ -23,7 +23,7 @@
  */
 // No login check is expected since this is a signup script.
 // @codingStandardsIgnoreLine
-require_once(dirname(__FILE__) . '/../../../config.php');
+require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->dirroot . '/user/editlib.php');
 require_once($CFG->libdir . '/authlib.php');
 require_once($CFG->dirroot . '/login/lib.php');

@@ -28,7 +28,7 @@
  */
 // Login_check is done in couponpage class.
 // @codingStandardsIgnoreLine
-require_once(dirname(__FILE__) . '/../../../config.php');
+require_once(__DIR__ . '/../../../config.php');
 
 use block_coupon\couponpage;
 use block_coupon\forms\coupon\validator;

@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(__FILE__) . '/../../../../config.php');
+require_once(__DIR__ . '/../../../../config.php');
 
 $t = optional_param('pd', null, PARAM_ALPHANUMEXT);
 $contextid = optional_param('contextid', context_system::instance()->id, PARAM_INT);
