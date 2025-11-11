@@ -34,5 +34,4 @@ $plugin->component   = 'block_coupon';
 $plugin->cron        = 0;
 $plugin->maturity    = MATURITY_STABLE;
 $plugin->release     = '4.4.2 (build 2024100103)';
-$plugin->dependencies = [];
 $plugin->supported = [405, 500];
