@@ -47,6 +47,7 @@ $string['alphachannel'] = 'Alpha channel';
 $string['alphachannel_help'] = 'This value determines how transparent the image is. You can set the alpha channel from 0 (fully transparent) to 1 (fully opaque).';
 $string['and'] = 'and';
 $string['batchidselect'] = 'Batch ID';
+$string['mybatchidselect'] = 'My Batch ID';
 $string['blockname'] = 'Coupon';
 $string['button:continue'] = 'Continue';
 $string['button:next'] = 'Next';
@@ -626,6 +627,9 @@ If you require special language support (cyrillic, arab, farsi, etc), you may wa
 ';
 $string['label:forceenableemailregistration'] = 'Force enable self registration via email';
 $string['label:forceenableemailregistration_help'] = 'If enabled, this will allow people to register via email authentication, even if this is disabled as self registration method.';
+$string['label:courses_to_show_in_findcourses_dropdown'] = 'Courses to show in courses dropdown';
+$string['label:courses_to_show_in_findcourses_dropdown_help'] = 'Type the ids of the courses you want to show in the dropdown. Separate multiple ids with a comma.<br><br>
+<b>Example:</b> 123,2,1,5,45';
 $string['label:forcelogo'] = 'Forced logo';
 $string['label:forcelogo_help'] = 'Select the logo that will be forced on all coupons for this user';
 $string['label:forcerole'] = 'Forced role';
