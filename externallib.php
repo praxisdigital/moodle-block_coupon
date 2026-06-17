@@ -578,60 +578,6 @@ class block_coupon_external extends external_api {
 
         return $courses;
     }
-    /**
-     * Returns courses based on search query.
-     *
-     * @param string $query search string
-     * @return array $courses
-     */
-    public static function find_courses($query) {
-        global $DB;
-
-        $where = [];
-        $qparams = [];
-
-        // Get courses to show in dropdown.
-        $courses_to_show_in_findcourses_dropdown = get_config('block_coupon', 'courses_to_show_in_findcourses_dropdown') ?? '';
-        $courses_to_show_in_findcourses_dropdown = explode(',', $courses_to_show_in_findcourses_dropdown);
-        if (!empty($courses_to_show_in_findcourses_dropdown)) {
-            [$in_sql, $in_params] = $DB->get_in_or_equal($courses_to_show_in_findcourses_dropdown);
-            $where[] = "c.id {$in_sql}";
-            $qparams = [...$qparams, ...$in_params];
-        }
-
-        // Dont include the SITE.
-        $where[] = 'c.id <> ' . SITEID;
-        $where[] = 'c.visible = 1';
-
-        $query = "%{$query}%";
-        $qwhere = [];
-        $qwhere[] = $DB->sql_like('c.shortname', '?', false, false);
-        $qparams[] = $query;
-
-        $qwhere[] = $DB->sql_like('c.fullname', '?', false, false);
-        $qparams[] = $query;
-
-        $qwhere[] = $DB->sql_like('c.idnumber', '?', false, false);
-        $qparams[] = $query;
-
-        $where[] = '('.implode(' OR ', $qwhere).')';
-
-        $sql = "SELECT id, shortname, fullname, idnumber FROM {course} c
-             WHERE ".implode(" AND ", $where).
-            " ORDER BY shortname ASC";
-        $rs = $DB->get_recordset_sql($sql, $qparams);
-        $courses = [];
-        foreach ($rs as $course) {
-            $courses[] = (object)[
-                'id' => $course->id,
-                'name' => $course->shortname . (empty($course->idnumber) ? '' : ' ('.$course->idnumber.')')
-            ];
-        }
-        $rs->close();
-
-        return $courses;
-    }
-
 
     /**
      * Returns description of method parameters
