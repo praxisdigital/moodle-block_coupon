@@ -271,7 +271,7 @@ class report extends base {
         }
 
         if (!$this->is_downloading()) {
-            $text = \html_writer::link(new \moodle_url('course/view.php', ['id' => $row->courseid]), $text);
+            $text = \html_writer::link(new \moodle_url('/course/view.php', ['id' => $row->courseid]), $text);
         }
         return $text;
     }
