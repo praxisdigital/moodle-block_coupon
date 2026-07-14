@@ -125,7 +125,8 @@
 .block-coupon-editlog-container .nav.nav-tabs .nav-link {
     white-space: nowrap;
 }
-/* Put each link on their own line */
+
+/*!* Put each link on their own line *!*/
 .block_coupon .btn-coupon {
     display: block;
 }
@@ -133,3 +134,25 @@
 #region-main .block_coupon .footer {
     display: flex;
 }
+
+/* Fixing coupon on dashboard - Moxis */
+#page-my-index #region-main .block_coupon .footer {
+    flex-direction: column;
+}
+#page-my-index #region-main .block_coupon .footer a{
+    margin: 0 auto 4px 0;
+}
+#page-my-index #region-main .block_coupon .footer br{
+    display: none;
+}
+#page-my-index #region-main .block_coupon .footer form tr,
+#page-my-index #region-main .block_coupon .footer form td,
+#page-my-index #region-main .block_coupon .footer form tbody
+{
+    border:none !important;
+}
+#page-my-index #region-main .block_coupon .footer table {
+    margin-top: 10px;
+    border-top: 1px solid #dee2e6;
+}
+/* Fixing coupon on dashboard - Moxis */
