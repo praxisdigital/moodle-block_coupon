@@ -1,5 +1,17 @@
+# MOXIS has made some changes to this plugin
 
-SEBSOFT COUPON PLUGIN
+## Moxis changelog:
+
+- 2026-07-14: Reintroduced styling for the coupon block on the dashboard to restore the old layout. Added changelog to README.md.
+- 2026-06-25: Fixed the course report link so it points to the correct Moodle course path.
+- 2026-06-25: Bumped the plugin version to 4.4.4.3 build 2026062500.
+- 2026-06-17: Added a setting to limit which courses are shown in the course dropdown.
+- 2026-06-17: Moved the course dropdown filtering logic into the correct external course lookup class.
+- 2026-06-17: Fixed coupon batch filter labels so "Batch ID" and "My Batch ID" can be shown separately.
+- 2026-06-17: Simplified the used-by user profile link to use Moodle-relative URLs and the table row data directly.
+
+
+## SEBSOFT COUPON PLUGIN
 
 The Sebsoft Coupon Plugin offers you the possibility to create coupons for various levels
 of course access. Using a coupon code, users will be enrolled into courses that are attached to the coupon.
