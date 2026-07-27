@@ -327,16 +327,6 @@ class coupons extends base {
                 '" data-id="' . $row->id . '" name="row[' . $row->id . ']"/>';
     }
 
-    /**
-     * Render visual representation of the 'usedby' column for use in the table
-     *
-     * @param \stdClass $row
-     * @return string time string
-     */
-    public function col_usedby($row) {
-        $url = new \moodle_url('/user/profile.php', ['id' => $row->userid]);
-        return \html_writer::link($url, fullname($row));
-    }
 
     /**
      * Render visual representation of the 'owner' column for use in the table
@@ -367,21 +357,21 @@ class coupons extends base {
      *
      * @param \stdClass $row
      * @return string time string
-    public function col_usedby($row) {
-        // This is a nasty hack, but it works.
-        $mrow = new \stdClass;
-        $mrow->userid = $row->userid;
-        $match = null;
-        foreach ($row as $k => $v) {
-            $mrow->{$k} = $v;
-        }
-        $old = $this->useridfield;
-        $this->useridfield = 'userid';
-        $fullname = parent::col_fullname($mrow);
-        $this->useridfield = $old;
-        return $fullname;
-    }
      */
+    public function col_usedby($row) {
+        global $CFG;
+        // Nasty modification. Does moodle support better methods here at all??
+        $obj = new \stdClass();
+        foreach ($row as $k => $v) {
+            if (stripos($k, 'user_') !== false) {
+                $nk = str_replace('user_', '', $k);
+                $obj->{$nk} = $v;
+            }
+        }
+
+        $url = new \moodle_url($CFG->wwwroot . '/user/profile.php', ['id' => $row->userid]);
+        return \html_writer::link($url, fullname($obj));
+    }
 
     /**
      * Render visual representation of the 'enrolperiod' column for use in the table

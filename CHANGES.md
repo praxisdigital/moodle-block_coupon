@@ -1,3 +1,7 @@
+Version 4.4.4.5 (build 2026072700)
+** Fixed claimed by not working. Implemented method "col_usedby" from sebsoftnl version 
+and removed our own implementation.
+
 Version 4.4.4.3 (build 2026062500)
 ** Merged latest + added our custom changes
 
