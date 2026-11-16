@@ -58,13 +58,12 @@ class course extends external_api {
         $where = [];
         $qparams = [];
 
-        // Get courses to show in dropdown.
-        $courses_to_show_in_findcourses_dropdown = get_config('block_coupon', 'courses_to_show_in_findcourses_dropdown') ?? '';
-        $courses_to_show_in_findcourses_dropdown = explode(',', $courses_to_show_in_findcourses_dropdown);
-        if (!empty($courses_to_show_in_findcourses_dropdown)) {
-            [$in_sql, $in_params] = $DB->get_in_or_equal($courses_to_show_in_findcourses_dropdown);
-            $where[] = "c.id {$in_sql}";
-            $qparams = [...$qparams, ...$in_params];
+        // Limit to the configured courses, but only when the setting holds real course IDs.
+        $dropdowncourseids = helper::get_findcourses_dropdown_courseids();
+        if (!empty($dropdowncourseids)) {
+            [$insql, $inparams] = $DB->get_in_or_equal($dropdowncourseids);
+            $where[] = "c.id {$insql}";
+            $qparams = array_merge($qparams, $inparams);
         }
 
         // Dont include the SITE.

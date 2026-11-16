@@ -1,3 +1,19 @@
+Version 4.4.4.6 (build 2026111600)
+** Fixed request-user edit page crashing: the findcourses and findcohorts form elements now accept null options
+   (QuickForm passes null when addElement() has no options; findcourses threw a TypeError, findcohorts failed in
+   array_key_exists()), and forms/request/user.php passes its options explicitly. This also fixes the
+   "edit cohorts" dynamic form, which adds findcohorts without options.
+** Fixed course search returning no courses when "Courses to show in courses dropdown" is empty.
+   New helper::get_findcourses_dropdown_courseids() only returns real course IDs (comma/whitespace separated);
+   external\course::find_courses() only applies the course filter when it has IDs.
+** Fixed accepting a coupon request: helper::mail_requested_coupons() called generate_coupons() with the
+   old argument list (TypeError, request rolled back). helper::generate_coupons() now also returns the
+   generated [relative filename, full path].
+** Fixed progress report for users without block/coupon:viewallreports: tables\report::get_query() reused the
+   :ownerid1 placeholder ("Incorrect number of query parameters"). get_count() now counts the UNION query
+   correctly and is used for paging; the report now honours the "coursedisplay" setting.
+** Added PHPUnit tests for the above.
+
 Version 4.4.4.5 (build 2026072700)
 ** Fixed claimed by not working. Implemented method "col_usedby" from sebsoftnl version 
 and removed our own implementation.
