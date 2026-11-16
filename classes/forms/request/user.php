@@ -62,11 +62,11 @@ class user extends \moodleform {
         $mform->addElement('static', 'info', '', get_string('coupon:user:info', 'block_coupon', $user));
 
         // Select courses that can be accessed.
-        $mform->addElement('findcourses', 'course', get_string('course'));
+        $mform->addElement('findcourses', 'course', get_string('course'), ['multiple' => true]);
         $mform->addHelpButton('course', 'findcourses', 'block_coupon');
 
         // Select cohorts that can be accessed.
-        $mform->addElement('findcohorts', 'cohort', get_string('crcohorts', 'block_coupon'));
+        $mform->addElement('findcohorts', 'cohort', get_string('crcohorts', 'block_coupon'), ['multiple' => true]);
         $mform->addHelpButton('cohort', 'crcohorts', 'block_coupon');
 
         // Now for some other options and settings...

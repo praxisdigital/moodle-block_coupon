@@ -49,6 +49,26 @@ class helper {
     }
 
     /**
+     * Get the course IDs the course search ("findcourses") is limited to.
+     *
+     * Reads the "courses_to_show_in_findcourses_dropdown" setting. Values may be separated
+     * by commas and/or whitespace; anything that is not a positive integer is ignored.
+     * An empty result means "no limit".
+     *
+     * @return int[] unique course IDs
+     */
+    final public static function get_findcourses_dropdown_courseids(): array {
+        $setting = (string) get_config('block_coupon', 'courses_to_show_in_findcourses_dropdown');
+        $courseids = [];
+        foreach (preg_split('/[\s,]+/', $setting, -1, PREG_SPLIT_NO_EMPTY) as $value) {
+            if (ctype_digit($value) && (int) $value > 0) {
+                $courseids[(int) $value] = (int) $value;
+            }
+        }
+        return array_values($courseids);
+    }
+
+    /**
      * Collect all courses connected to the provided cohort ID
      *
      * @param int $cohortid cohortid
@@ -1175,13 +1195,7 @@ class helper {
         }
 
         // Generate!
-        [$filename, $relativefilename] = static::generate_coupons(
-            $coupons,
-            $generatoroptions->generatesinglepdfs,
-            $generatoroptions->batchid,
-            $ts,
-            $generatoroptions->font
-        );
+        static::generate_coupons($coupons, $generatoroptions, $ts);
 
         if (!empty($generatoroptions->emailto)) {
             $user->email = $generatoroptions->emailto;
@@ -1804,10 +1818,9 @@ class helper {
      */
     protected static function generate_coupons($coupons, coupon\generatoroptions $generatoroptions, $ts) {
         if ($generatoroptions->usetemplate) {
-            static::generate_coupons_tpl_($coupons, $generatoroptions, $ts);
-        } else {
-            static::generate_coupons_orig_($coupons, $generatoroptions, $ts);
+            return static::generate_coupons_tpl_($coupons, $generatoroptions, $ts);
         }
+        return static::generate_coupons_orig_($coupons, $generatoroptions, $ts);
     }
 
     /**

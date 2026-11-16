@@ -63,11 +63,13 @@ class findcohorts extends MoodleQuickForm_autocomplete {
      *
      * @param string $elementname Element name
      * @param mixed $elementlabel Label(s) for an element
-     * @param array $options Options to control the element's display
+     * @param array|null $options Options to control the element's display.
+     *                       QuickForm passes null when addElement() is called without options.
      *                       Valid options are:
      *                       - multiple bool Whether or not the field accepts more than one values.
      */
-    public function __construct($elementname = null, $elementlabel = null, $options = []) {
+    public function __construct($elementname = null, $elementlabel = null, ?array $options = null) {
+        $options = $options ?? [];
         $validattributes = [
             'ajax' => 'block_coupon/findcohorts',
             'multiple' => true,

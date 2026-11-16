@@ -100,13 +100,8 @@ class report extends base {
      */
     protected function get_count() {
         global $DB;
-        $queries = $this->get_query(true);
-        $total = 0;
-        foreach ($queries as $parts) {
-            [$sql, $params] = $parts;
-            $total += $DB->count_records_sql($sql, $params);
-        }
-        return $total;
+        [$sql, $params] = $this->get_query(true);
+        return $DB->count_records_sql('SELECT COUNT(*) FROM (' . $sql . ') c', $params);
     }
 
     /**
@@ -117,7 +112,10 @@ class report extends base {
      */
     protected function get_query($forcount = false) {
         $config = get_config('block_coupon');
-        $dfield = $this->config->coursedisplay ?? 'fullname';
+        $dfield = $config->coursedisplay ?? 'fullname';
+        if (!in_array($dfield, ['fullname', 'shortname'], true)) {
+            $dfield = 'fullname';
+        }
         $coursefield = 'c.' . $dfield;
 
         global $DB;
@@ -163,8 +161,8 @@ class report extends base {
                AND claimed = 1
                ';
         if ($this->ownerid > 0) {
-            $q3 .= ' AND bc.ownerid = :ownerid1';
-            $q3params['ownerid1'] = $this->ownerid;
+            $q3 .= ' AND bc.ownerid = :ownerid3';
+            $q3params['ownerid3'] = $this->ownerid;
         }
 
         return ["{$q1} UNION DISTINCT {$q2} UNION DISTINCT {$q3}", array_merge($q1params, $q2params, $q3params)];
@@ -184,8 +182,7 @@ class report extends base {
         [$sql, $params] = $this->get_query(false);
 
         if (!$this->is_downloading()) {
-            $total = $DB->count_records_sql('SELECT COUNT(*) FROM (' . $sql . ') c', $params);
-            $this->pagesize($pagesize, $total);
+            $this->pagesize($pagesize, $this->get_count());
         }
 
         // Fetch the attempts.
