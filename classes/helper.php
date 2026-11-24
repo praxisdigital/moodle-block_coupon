@@ -1195,7 +1195,7 @@ class helper {
         }
 
         // Generate!
-        static::generate_coupons($coupons, $generatoroptions, $ts);
+        [, $archive] = static::generate_coupons($coupons, $generatoroptions, $ts);
 
         if (!empty($generatoroptions->emailto)) {
             $user->email = $generatoroptions->emailto;
@@ -1205,7 +1205,7 @@ class helper {
 
         $downloadurl = new \moodle_url(
             $CFG->wwwroot . '/blocks/coupon/download.php',
-            ['bid' => $generatoroptions->batchid, 't' => $ts]
+            ['bid' => $generatoroptions->batchid, 't' => $ts, 'token' => \block_coupon\app\batch\files::issue_token($archive)]
         );
         $a = new \stdClass();
         $a->fullname = fullname($user);
@@ -1647,10 +1647,10 @@ class helper {
      * @param string $batchid
      * @param string $timeid
      * @param boolean $dodl
+     * @param string $token Optional token from a delivery email.
      */
-    public static function download($batchid, $timeid, $dodl = false) {
+    public static function download($batchid, $timeid, $dodl = false, string $token = '') {
         global $CFG, $OUTPUT;
-        \block_coupon\app\batch\files::require_download_access($batchid);
         $zip = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'zip');
         $pdf = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'pdf');
         if (is_file($zip)) {
@@ -1658,6 +1658,7 @@ class helper {
         } else if (is_file($pdf)) {
             $filename = $pdf;
         } else {
+            \block_coupon\app\batch\files::require_download_access($batchid);
             $a = (object) [
                 'batchid' => s($batchid),
                 'timeid' => $timeid,
@@ -1665,14 +1666,20 @@ class helper {
             throw new \block_coupon\exception('err:download-not-exists', '', $a);
         }
 
+        \block_coupon\app\batch\files::require_download_access($batchid, $filename, $token);
+
         if (!$dodl) {
-            $url = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', ['bid' => $batchid, 't' => $timeid, 'dl' => 1]);
+            $params = ['bid' => $batchid, 't' => $timeid, 'dl' => 1];
+            if ($token !== '') {
+                $params['token'] = $token;
+            }
+            $url = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', $params);
             $button = $OUTPUT->single_button($url, get_string('downloadcoupons:buttontext', 'block_coupon'), 'get');
             echo get_string('downloadcoupons:text', 'block_coupon', $button);
         } else {
             self::dlh(str_replace(['"', '\\'], '_', basename($filename)), filesize($filename));
             readfile($filename);
-            unlink($filename);
+            \block_coupon\app\batch\files::delete_archive($filename);
         }
     }
 
@@ -1739,7 +1746,7 @@ class helper {
             $generatoroptions->batchid = uniqid();
         }
         // Generate!
-        [$filename, $relativefilename] = static::generate_coupons($coupons, $generatoroptions, $ts);
+        [, $archive] = static::generate_coupons($coupons, $generatoroptions, $ts);
 
         // Attempt to send email...
         global $USER;
@@ -1766,7 +1773,7 @@ class helper {
         } else {
             $downloadurl = new \moodle_url(
                 $CFG->wwwroot . '/blocks/coupon/download.php',
-                ['bid' => $generatoroptions->batchid, 't' => $ts]
+                ['bid' => $generatoroptions->batchid, 't' => $ts, 'token' => \block_coupon\app\batch\files::issue_token($archive)]
             );
             $bodyparams = [
                 'fullname' => fullname($USER),

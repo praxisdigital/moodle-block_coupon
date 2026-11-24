@@ -900,9 +900,11 @@ class block_coupon_external extends external_api {
                 'query' => $query,
                 'owneronly' => $owneronly,
             ]);
-            // Nice and easy, call extract() so we have nicely extracted params.
-            extract($params); // @codingStandardsIgnoreLine AND I DO ALLOW THIS SINCE DATA IS CLEANED ALREADY.
-
+            $context = context_system::instance();
+            self::validate_context($context);
+            $query = $params['query'];
+            $owneronly = $params['owneronly'] || !has_capability('block/coupon:viewallreports', $context);
+            $params = [];
             if ($owneronly) {
                 $where[] = 'ownerid = :ownerid';
                 $params['ownerid'] = $USER->id;

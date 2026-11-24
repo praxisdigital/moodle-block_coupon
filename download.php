@@ -39,8 +39,10 @@ $CFG->debug = 0;
 $batchid = required_param('bid', PARAM_TEXT); // Changed to TEXT because that's how the form defines the param type!
 $timeid = required_param('t', PARAM_ALPHANUM);
 $dodl = optional_param('dl', false, PARAM_BOOL);
+$token = optional_param('token', '', PARAM_RAW);
 
 require_login();
+header('Referrer-Policy: no-referrer');
 
 $title = 'view:download:title';
 $heading = 'view:download:heading';
@@ -58,10 +60,10 @@ $PAGE->set_pagelayout('standard');
 
 try {
     if ((bool) $dodl) {
-        helper::download($batchid, $timeid, true);
+        helper::download($batchid, $timeid, true, $token);
     } else {
         echo $OUTPUT->header();
-        helper::download($batchid, $timeid);
+        helper::download($batchid, $timeid, false, $token);
         echo $OUTPUT->footer();
     }
 } catch (block_coupon\exception $e) {

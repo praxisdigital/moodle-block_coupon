@@ -52,10 +52,10 @@ final class name {
         return (string) ($request->batchname ?? $request->clientref ?? '');
     }
 
-    /** Check whether coupons already belong to this ID, using the same equality as grouping queries. */
+    /** Check whether coupons or a remaining archive already use this ID. */
     public static function exists(string $value): bool {
         global $DB;
-        return $DB->record_exists('block_coupon', ['batchid' => $value]);
+        return $DB->record_exists('block_coupon', ['batchid' => $value]) || files::has_archive($value);
     }
 
     /** Choose the first available ID. Call while holding the batch write lock. */

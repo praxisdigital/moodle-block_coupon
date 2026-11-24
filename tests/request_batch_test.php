@@ -173,9 +173,16 @@ final class request_batch_test extends provider_testcase {
         $options->ownerid = $owner->id;
         $options->batchid = 'Invoice 42';
         (new \block_coupon\coupon\generator())->generate_coupons($options);
+        $options->amount = 1;
+        $options->ownerid = $this->getDataGenerator()->create_user()->id;
+        $options->batchid = 'Invoice 43';
+        (new \block_coupon\coupon\generator())->generate_coupons($options);
 
-        $matches = \block_coupon_external::find_batches('Invoice 42', true);
+        $matches = \block_coupon_external::find_batches('Invoice', false);
         $this->assertSame(['Invoice 42'], $matches->data);
+        $this->setAdminUser();
+        $matches = \block_coupon_external::find_batches('Invoice', false);
+        $this->assertSame(['Invoice 42', 'Invoice 43'], $matches->data);
     }
 
     /** Generate a PDF and ZIP with full-length IDs and resolve them by the public batch ID. */
@@ -289,6 +296,52 @@ final class request_batch_test extends provider_testcase {
             $sink->close();
         }
         $this->assertSame('0', $DB->get_field('block_coupon', 'batchid', ['id' => $coupon->id]));
+    }
+
+    /** A remaining archive reserves its batch ID even when there are no coupon rows. */
+    public function test_archive_reserves_batch_name_and_uses_portable_path(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $batchid = 'Orphan PO?123';
+        $timeid = '24112026150000';
+        $relative = files::path($batchid, $timeid, 'pdf', true);
+        $this->assertStringNotContainsString('?', $relative);
+        $path = $CFG->dataroot . '/' . $relative;
+        file_put_contents($path, '%PDF');
+        try {
+            $this->assertSame($relative, files::path($batchid, $timeid, 'pdf'));
+            $this->assertSame($batchid . '-2', name::next_available($batchid));
+        } finally {
+            files::delete_archive($path);
+        }
+        $this->assertSame($batchid, name::next_available($batchid));
+    }
+
+    /** An emailed link authorizes a signed-in non-owner for its original archive only. */
+    public function test_delivery_token_is_scoped_to_one_archive(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $first = $CFG->dataroot . '/coupons-Archive A-24112026150000.pdf';
+        $second = $CFG->dataroot . '/coupons-Archive B-24112026150000.pdf';
+        file_put_contents($first, '%PDF');
+        file_put_contents($second, '%PDF');
+        try {
+            $token = files::issue_token($first);
+            files::issue_token($second);
+            ob_start();
+            try {
+                helper::download('Archive A', '24112026150000', false, $token);
+                $this->assertStringContainsString('name="token" value="' . $token . '"', ob_get_contents());
+            } finally {
+                ob_end_clean();
+            }
+            $this->expectException(\required_capability_exception::class);
+            helper::download('Archive B', '24112026150000', false, $token);
+        } finally {
+            files::delete_archive($first);
+            files::delete_archive($second);
+        }
     }
 
     /** Create the same DB record shape as the request controller. */
