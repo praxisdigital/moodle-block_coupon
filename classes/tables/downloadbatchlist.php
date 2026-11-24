@@ -103,28 +103,13 @@ class downloadbatchlist extends base {
         $this->define_table_columns($columns);
 
         // Determine data/rows.
-        $path = $CFG->dataroot;
-        $di = new \DirectoryIterator($path);
         $rows = [];
         $batchids = [];
         $tids = [];
-        foreach ($di as $fileinfo) {
-            if ($fileinfo->isDot()) {
-                continue;
-            }
-            if ($fileinfo->isDir()) {
-                continue;
-            }
-            $fn = $fileinfo->getFilename();
-            $match = null;
-            if (preg_match('/coupons-(.+)-(\d+)/i', $fn, $match)) {
-                $rows[] = (object)[
-                    'batchid' => $match[1],
-                    'tid' => $match[2],
-                ];
-                $batchids[] = $match[1];
-                $tids[] = $match[2];
-            }
+        foreach (\block_coupon\app\batch\files::list_batches($CFG->dataroot) as $row) {
+            $rows[] = $row;
+            $batchids[] = $row->batchid;
+            $tids[] = $row->tid;
         }
         // Loop through rows and find owners.
         [$insql, $params] = $DB->get_in_or_equal($batchids, SQL_PARAMS_NAMED, 'bid', true, 0);

@@ -46,6 +46,7 @@ class myrequests extends base {
         global $USER;
         parent::__construct(__CLASS__ . '-' . $USER->id);
         $this->no_sorting('action');
+        $this->sortable(true, 'timecreated', SORT_DESC);
     }
 
     /**
@@ -71,14 +72,14 @@ class myrequests extends base {
      */
     public function render($pagesize, $useinitialsbar = true) {
         global $USER;
-        $columns = ['timecreated'];
+        $columns = ['displaybatchname', 'timecreated'];
         if ($this->is_downloading() == '') {
             $columns[] = 'action';
         }
         $this->define_table_columns($columns);
 
         // Generate SQL.
-        $fields = 'cr.*, NULL as action';
+        $fields = 'cr.*, COALESCE(cr.batchname, cr.clientref) AS displaybatchname, NULL as action';
         $from = '{block_coupon_requests} cr ';
 
         $where = [
@@ -97,6 +98,11 @@ class myrequests extends base {
 
         parent::set_sql($fields, $from, implode(' AND ', $where), $params);
         $this->out($pagesize, $useinitialsbar);
+    }
+
+    /** Render a batch name as plain text in the HTML table. */
+    public function col_displaybatchname($row) {
+        return $this->is_downloading() ? $row->displaybatchname : s($row->displaybatchname ?? '');
     }
 
     /**

@@ -374,7 +374,7 @@ class requestadmin {
     }
 
     /**
-     * Process deny request instance
+     * Process acceptance of a pending request.
      */
     protected function process_accept_request() {
         global $DB;
@@ -393,35 +393,15 @@ class requestadmin {
         $options = [
             get_string('request:accept:heading', 'block_coupon', $user),
             $this->renderer->requestdetails($instance),
+            \block_coupon\app\batch\name::requested($instance),
         ];
         $mform = new \block_coupon\forms\request\accept($url, $options);
         if ($mform->is_cancelled()) {
             redirect($redirect);
         } else if ($data = $mform->get_data()) {
-            $dbt = $DB->start_delegated_transaction();
-            try {
-                $record = $DB->get_record('block_coupon_requests', ['id' => $itemid]);
-                $options = unserialize($record->configuration);
-                $generator = new \block_coupon\coupon\generator();
-                $generator->generate_coupons($options);
-
-                // We no longer delete the requests, but mark it with statuses.
-                $record->denied = 0;
-                $record->finalized = 1;
-                $DB->update_record('block_coupon_requests', $record);
-
-                // Generate and send off.
-                $coupons = $DB->get_records_list('block_coupon', 'id', $generator->get_generated_couponids());
-                \block_coupon\helper::mail_requested_coupons(
-                    $user,
-                    $coupons,
-                    $options,
-                    $data->message['text']
-                );
-
-                $dbt->allow_commit();
-            } catch (\Exception $ex) {
-                $dbt->rollback($ex);
+            $batchid = \block_coupon\app\request\acceptance::process($itemid, $data->batchname, $data->message['text']);
+            if ($batchid !== null) {
+                \core\notification::success(get_string('request:accept:batchname', 'block_coupon', s($batchid)));
             }
             redirect($redirect);
         }

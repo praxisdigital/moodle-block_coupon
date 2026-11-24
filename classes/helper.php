@@ -1190,7 +1190,7 @@ class helper {
 
         // Prepare time identifier and batchid.
         $ts = date('dmYHis');
-        if (empty($generatoroptions->batchid)) {
+        if ((string) $generatoroptions->batchid === '') {
             $generatoroptions->batchid = uniqid();
         }
 
@@ -1650,17 +1650,18 @@ class helper {
      */
     public static function download($batchid, $timeid, $dodl = false) {
         global $CFG, $OUTPUT;
-        $basename = "coupons-{$batchid}-{$timeid}";
-        if (file_exists("{$CFG->dataroot}/{$basename}.zip")) {
-            $filename = "{$CFG->dataroot}/{$basename}.zip";
-        } else if (file_exists("{$CFG->dataroot}/{$basename}.pdf")) {
-            $filename = "{$CFG->dataroot}/{$basename}.pdf";
+        $zip = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'zip');
+        $pdf = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'pdf');
+        if (is_file($zip)) {
+            $filename = $zip;
+        } else if (is_file($pdf)) {
+            $filename = $pdf;
         } else {
             $a = (object) [
-                'batchid' => $batchid,
+                'batchid' => s($batchid),
                 'timeid' => $timeid,
             ];
-            throw new \block_coupon\exception('err:download-not-exists', $a);
+            throw new \block_coupon\exception('err:download-not-exists', '', $a);
         }
 
         if (!$dodl) {
@@ -1668,7 +1669,7 @@ class helper {
             $button = $OUTPUT->single_button($url, get_string('downloadcoupons:buttontext', 'block_coupon'), 'get');
             echo get_string('downloadcoupons:text', 'block_coupon', $button);
         } else {
-            self::dlh(basename($filename), filesize($filename));
+            self::dlh(str_replace('"', '_', basename($filename)), filesize($filename));
             readfile($filename);
             unlink($filename);
         }
@@ -1733,7 +1734,7 @@ class helper {
 
         // Prepare time identifier and batchid.
         $ts = date('dmYHis');
-        if (empty($generatoroptions->batchid)) {
+        if ((string) $generatoroptions->batchid === '') {
             $generatoroptions->batchid = uniqid();
         }
         // Generate!
@@ -1841,7 +1842,7 @@ class helper {
 
             // Initiate archive.
             $zip = new \ZipArchive();
-            $relativefilename = "coupons-{$generatoroptions->batchid}-{$ts}.zip";
+            $relativefilename = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'zip', true);
             $filename = "{$CFG->dataroot}/{$relativefilename}";
             if (file_exists($filename)) {
                 unlink($filename);
@@ -1866,7 +1867,7 @@ class helper {
 
             return [$relativefilename, $filename];
         } else {
-            $rfn = "coupons-{$generatoroptions->batchid}-{$ts}.pdf";
+            $rfn = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'pdf', true);
             [$relativefilename, $filename] = $template->generate_pdf($coupons, false, null, false, $rfn);
             return [$relativefilename, $filename];
         }
@@ -1888,7 +1889,7 @@ class helper {
 
             // Initiate archive.
             $zip = new \ZipArchive();
-            $relativefilename = "coupons-{$generatoroptions->batchid}-{$ts}.zip";
+            $relativefilename = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'zip', true);
             $filename = "{$CFG->dataroot}/{$relativefilename}";
             if (file_exists($filename)) {
                 unlink($filename);
@@ -1931,7 +1932,7 @@ class helper {
             $pdfgen->set_templatebotright(get_string('default-coupon-page-template-botright', 'block_coupon'));
             $pdfgen->generate($coupons);
 
-            $relativefilename = "coupons-{$generatoroptions->batchid}-{$ts}.pdf";
+            $relativefilename = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'pdf', true);
             $filename = "{$CFG->dataroot}/{$relativefilename}";
             if (file_exists($filename)) {
                 unlink($filename);

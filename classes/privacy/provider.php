@@ -68,6 +68,7 @@ class provider implements
                 'for_user_gender' => 'privacy:metadata:block_coupon:for_user_gender',
                 'email_body' => 'privacy:metadata:block_coupon:email_body',
                 'submission_code' => 'privacy:metadata:block_coupon:submission_code',
+                'batchid' => 'privacy:metadata:block_coupon:batchid',
                 'claimed' => 'privacy:metadata:block_coupon:claimed',
                 'roleid' => 'privacy:metadata:block_coupon:roleid',
                 'timecreated' => 'privacy:metadata:block_coupon:timecreated',
@@ -91,6 +92,7 @@ class provider implements
                 'userid' => 'privacy:metadata:block_coupon:userid',
                 'configuration' => 'privacy:metadata:block_coupon_requests:configuration',
                 'clientref' => 'privacy:metadata:block_coupon_requests:clientref',
+                'batchname' => 'privacy:metadata:block_coupon_requests:batchname',
                 'denied' => 'privacy:metadata:block_coupon_requests:denied',
                 'finalized' => 'privacy:metadata:block_coupon_requests:finalized',
                 'timecreated' => 'privacy:metadata:block_coupon:timecreated',
@@ -152,6 +154,7 @@ class provider implements
                     'for_user_gender' => $coupon->for_user_gender,
                     'email_body' => $coupon->email_body,
                     'submission_code' => $coupon->submission_code,
+                    'batchid' => $coupon->batchid,
                     'claimed' => transform::yesno($coupon->claimed),
                     'roleid' => $coupon->roleid,
                     'timecreated' => transform::datetime($coupon->timecreated),
@@ -237,13 +240,14 @@ class provider implements
                     'userid' => $couponrequest->userid,
                     'configuration' => $couponrequest->configuration,
                     'clientref' => $couponrequest->clientref,
+                    'batchname' => $couponrequest->batchname,
                     'denied' => $couponrequest->denied,
                     'finalized' => $couponrequest->finalized,
                     'timecreated' => transform::datetime($couponrequest->timecreated),
                     'timemodified' => transform::datetime($couponrequest->timemodified),
                 ];
             }
-            $coupons->close();
+            $couponrequests->close();
 
             // The data is organised in: {?}/couponrequests.json.
             array_walk($alldata, function ($coupondata, $contextid) {

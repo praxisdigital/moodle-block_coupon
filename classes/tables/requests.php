@@ -92,14 +92,14 @@ class requests extends base {
      * @param boolean $useinitialsbar
      */
     public function render($pagesize, $useinitialsbar = true) {
-        $columns = ['fullname', 'timecreated'];
+        $columns = ['fullname', 'displaybatchname', 'timecreated'];
         if ($this->is_downloading() == '') {
             $columns[] = 'action';
         }
         $this->define_table_columns($columns);
 
         // Generate SQL.
-        $fields = 'cu.id, cu.timecreated, cu.configuration, cu.userid, ' .
+        $fields = 'cu.id, cu.timecreated, cu.configuration, cu.userid, COALESCE(cu.batchname, cu.clientref) AS displaybatchname, ' .
                 \block_coupon\helper::get_all_user_name_fields(true, 'u') . ', NULL as action';
         $from = '{block_coupon_requests} cu ';
         $from .= 'JOIN {user} u ON cu.userid=u.id ';
@@ -116,6 +116,11 @@ class requests extends base {
 
         parent::set_sql($fields, $from, implode(' AND ', $where), $params);
         $this->out($pagesize, $useinitialsbar);
+    }
+
+    /** Render a batch name as plain text in the HTML table. */
+    public function col_displaybatchname($row) {
+        return $this->is_downloading() ? $row->displaybatchname : s($row->displaybatchname ?? '');
     }
 
     /**

@@ -47,6 +47,15 @@ Met deze coupon kun je maximaal {$a->maxamount} cursus(sen) kiezen.';
 $string['cleanup:confirm:confirmmessage'] = 'Ja, ik wil de coupons met deze opties verwijderen';
 $string['cleanup:confirm:header'] = 'Bevestig a.u.b. het verwijderen van coupons met de volgende opties';
 $string['clientref'] = 'Klant referentie';
+$string['request:batchname'] = 'Batchnaam';
+$string['request:batchname:invalid'] = 'Een batchnaam mag geen schuine strepen (/), backslashes (\\) of stuurtekens bevatten.';
+$string['request:batchname:toolong'] = 'Een batchnaam mag maximaal {$a} tekens bevatten.';
+$string['request:batchname:plaintext'] = 'Voer de batchnaam in als platte tekst.';
+$string['request:accept:batchname'] = 'Aanvraag goedgekeurd. Definitieve batch-ID: {$a}';
+$string['privacy:metadata:block_coupon_requests:batchname'] = 'Batchnaam opgegeven door de aanvrager';
+$string['privacy:metadata:block_coupon_requests:clientref'] = 'Oorspronkelijke klantreferentie';
+$string['privacy:metadata:block_coupon:batchid'] = 'Definitieve batch-ID van de coupon';
+$string['th:displaybatchname'] = 'Batchnaam';
 $string['cohort'] = 'cohort';
 $string['confirm_coupons_sent_body'] = '
 Hallo,<br /><br />
