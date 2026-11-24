@@ -29,10 +29,28 @@ final class files {
     /** @var string Directory for IDs that don't fit in the legacy filename. */
     private const EXTENDED_DIRECTORY = 'block_coupon_batch_files';
 
+    /** Require the batch owner or a user allowed to view all coupon reports. */
+    public static function require_download_access(string $batchid): void {
+        global $DB, $USER;
+
+        if (has_capability('block/coupon:viewallreports', \context_system::instance())) {
+            return;
+        }
+        if (
+            !isloggedin() || isguestuser() ||
+            !$DB->record_exists('block_coupon', ['batchid' => $batchid, 'ownerid' => $USER->id]) ||
+            $DB->record_exists_select('block_coupon', 'batchid = ? AND (ownerid <> ? OR ownerid IS NULL)', [$batchid, $USER->id])
+        ) {
+            throw new \required_capability_exception(\context_system::instance(), 'block/coupon:viewallreports', 'nopermissions', '');
+        }
+    }
+
     /** Return the relative path, preparing the directory if a writer needs it. */
     public static function path(string $batchid, string $timeid, string $extension, bool $write = false): string {
         if (
-            $batchid === '' || name::error($batchid) !== null || !ctype_digit($timeid) ||
+            $batchid === '' || str_contains($batchid, '/') ||
+            (DIRECTORY_SEPARATOR === '\\' && str_contains($batchid, '\\')) ||
+            preg_match('/[\x00-\x1f\x7f]/', $batchid) || !ctype_digit($timeid) ||
             !in_array($extension, ['pdf', 'zip'], true)
         ) {
             throw new \block_coupon\exception('err:download-not-exists', '', (object) [
@@ -44,6 +62,14 @@ final class files {
         $legacy = "coupons-{$batchid}-{$timeid}.{$extension}";
         if (strlen($legacy) <= 255) {
             return $legacy;
+        }
+
+        // Historical short filenames use filesystem rules rather than the new-name validator.
+        if (name::error($batchid) !== null) {
+            throw new \block_coupon\exception('err:download-not-exists', '', (object) [
+                'batchid' => s($batchid),
+                'timeid' => s($timeid),
+            ]);
         }
 
         // Encode reversibly so the download list can recover the full ID without a new table or sidecar.

@@ -1337,7 +1337,7 @@ class helper {
 
         // Prepare time identifier and batchid.
         $ts = date('dmYHis');
-        if (empty($coupon->batchid)) {
+        if ((string) $coupon->batchid === '') {
             $coupon->batchid = uniqid();
             $coupon->timemodified = time();
             $DB->update_record('block_coupon', $coupon);
@@ -1650,6 +1650,7 @@ class helper {
      */
     public static function download($batchid, $timeid, $dodl = false) {
         global $CFG, $OUTPUT;
+        \block_coupon\app\batch\files::require_download_access($batchid);
         $zip = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'zip');
         $pdf = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'pdf');
         if (is_file($zip)) {
@@ -1669,7 +1670,7 @@ class helper {
             $button = $OUTPUT->single_button($url, get_string('downloadcoupons:buttontext', 'block_coupon'), 'get');
             echo get_string('downloadcoupons:text', 'block_coupon', $button);
         } else {
-            self::dlh(str_replace('"', '_', basename($filename)), filesize($filename));
+            self::dlh(str_replace(['"', '\\'], '_', basename($filename)), filesize($filename));
             readfile($filename);
             unlink($filename);
         }

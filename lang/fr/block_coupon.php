@@ -372,6 +372,7 @@ $string['request:batchname:invalid'] = 'Un nom de lot ne peut contenir ni barre 
 $string['request:batchname:toolong'] = 'Le nom du lot doit comporter au maximum {$a} caractères.';
 $string['request:batchname:plaintext'] = 'Saisissez le nom du lot en texte brut.';
 $string['request:accept:batchname'] = 'Demande acceptée. Identifiant final du lot : {$a}';
+$string['request:accept:deliveryfailed'] = 'Demande acceptée, mais les coupons n’ont pas pu être envoyés automatiquement. Identifiant final du lot : {$a}';
 $string['privacy:metadata:block_coupon_requests:batchname'] = 'Nom du lot saisi par le demandeur';
 $string['privacy:metadata:block_coupon_requests:clientref'] = 'Référence client d’origine';
 $string['privacy:metadata:block_coupon:batchid'] = 'Identifiant final du lot du coupon';

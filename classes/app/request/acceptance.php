@@ -30,8 +30,8 @@ use block_coupon\helper;
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class acceptance {
-    /** Accept the pending request and return the final batch ID, or null if already finalized. */
-    public static function process(int $id, string $batchname, string $message): ?string {
+    /** Accept the request and return its final batch ID and delivery status, or null if already finalized. */
+    public static function process(int $id, string $batchname, string $message): ?array {
         global $DB;
 
         $error = name::error($batchname);
@@ -40,7 +40,7 @@ final class acceptance {
         }
         $batchname = trim($batchname);
 
-        return name::synchronise(static function () use ($DB, $id, $batchname, $message): ?string {
+        $batch = name::synchronise(static function () use ($DB, $id, $batchname): ?array {
             $record = $DB->get_record('block_coupon_requests', ['id' => $id], '*', MUST_EXIST);
             if ($record->finalized) {
                 return null;
@@ -62,13 +62,26 @@ final class acceptance {
                 $record->finalized = 1;
                 $DB->update_record('block_coupon_requests', $record);
 
-                $coupons = $DB->get_records_list('block_coupon', 'id', $generator->get_generated_couponids());
-                helper::mail_requested_coupons($user, $coupons, $options, $message);
                 $transaction->allow_commit();
             } catch (\Throwable $error) {
                 $transaction->rollback($error);
             }
-            return $options->batchid;
+            return [$user, $options, $generator->get_generated_couponids()];
         });
+        if ($batch === null) {
+            return null;
+        }
+
+        // Rendering and SMTP must not hold up creation of unrelated batches.
+        [$user, $options, $couponids] = $batch;
+        $coupons = $DB->get_records_list('block_coupon', 'id', $couponids);
+        try {
+            [$delivered] = helper::mail_requested_coupons($user, $coupons, $options, $message);
+        } catch (\Throwable $error) {
+            // The request is already finalized. Record the failed delivery, not a second acceptance attempt.
+            error_log('block_coupon: request ' . $id . ' delivery failed: ' . $error->getMessage());
+            $delivered = false;
+        }
+        return ['batchid' => $options->batchid, 'delivered' => $delivered];
     }
 }

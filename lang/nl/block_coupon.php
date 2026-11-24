@@ -52,6 +52,7 @@ $string['request:batchname:invalid'] = 'Een batchnaam mag geen schuine strepen (
 $string['request:batchname:toolong'] = 'Een batchnaam mag maximaal {$a} tekens bevatten.';
 $string['request:batchname:plaintext'] = 'Voer de batchnaam in als platte tekst.';
 $string['request:accept:batchname'] = 'Aanvraag goedgekeurd. Definitieve batch-ID: {$a}';
+$string['request:accept:deliveryfailed'] = 'Aanvraag goedgekeurd, maar de coupons konden niet automatisch worden bezorgd. Definitieve batch-ID: {$a}';
 $string['privacy:metadata:block_coupon_requests:batchname'] = 'Batchnaam opgegeven door de aanvrager';
 $string['privacy:metadata:block_coupon_requests:clientref'] = 'Oorspronkelijke klantreferentie';
 $string['privacy:metadata:block_coupon:batchid'] = 'Definitieve batch-ID van de coupon';

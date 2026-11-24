@@ -399,9 +399,14 @@ class requestadmin {
         if ($mform->is_cancelled()) {
             redirect($redirect);
         } else if ($data = $mform->get_data()) {
-            $batchid = \block_coupon\app\request\acceptance::process($itemid, $data->batchname, $data->message['text']);
-            if ($batchid !== null) {
-                \core\notification::success(get_string('request:accept:batchname', 'block_coupon', s($batchid)));
+            $result = \block_coupon\app\request\acceptance::process($itemid, $data->batchname, $data->message['text']);
+            if ($result !== null) {
+                $batchid = s($result['batchid']);
+                if ($result['delivered']) {
+                    \core\notification::success(get_string('request:accept:batchname', 'block_coupon', $batchid));
+                } else {
+                    \core\notification::warning(get_string('request:accept:deliveryfailed', 'block_coupon', $batchid));
+                }
             }
             redirect($redirect);
         }

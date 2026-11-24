@@ -62,11 +62,11 @@ final class request_batch_test extends provider_testcase {
 
         $sink = $this->redirectEmails();
         try {
-            $this->assertSame('PO 123', acceptance::process($first, 'PO 123', ''));
-            $this->assertSame('PO 123-2', acceptance::process($second, 'PO 123', ''));
-            $this->assertSame('PO 123-3', acceptance::process($legacy, name::requested($record), ''));
-            $this->assertSame($options->batchid, acceptance::process($blank, '   ', ''));
-            $this->assertSame('0', acceptance::process($zero, '0', ''));
+            $this->assertSame(['batchid' => 'PO 123', 'delivered' => true], acceptance::process($first, 'PO 123', ''));
+            $this->assertSame('PO 123-2', acceptance::process($second, 'PO 123', '')['batchid']);
+            $this->assertSame('PO 123-3', acceptance::process($legacy, name::requested($record), '')['batchid']);
+            $this->assertSame($options->batchid, acceptance::process($blank, '   ', '')['batchid']);
+            $this->assertSame('0', acceptance::process($zero, '0', '')['batchid']);
             $this->assertNull(acceptance::process($first, 'Different batch', ''));
             $this->assertCount(5, $sink->get_messages());
         } finally {
@@ -195,7 +195,7 @@ final class request_batch_test extends provider_testcase {
             foreach (['pdf', 'zip'] as $index => $extension) {
                 $options->generatesinglepdfs = $extension === 'zip';
                 $request = $this->create_request($options, $ids[$index]);
-                $this->assertSame($ids[$index], acceptance::process($request, $ids[$index], ''));
+                $this->assertSame(['batchid' => $ids[$index], 'delivered' => true], acceptance::process($request, $ids[$index], ''));
                 $generated[$ids[$index]] = $extension;
             }
             foreach (files::list_batches($CFG->dataroot) as $file) {
@@ -220,6 +220,75 @@ final class request_batch_test extends provider_testcase {
         } finally {
             $sink->close();
         }
+    }
+
+    /** The owner can open an older archive, but another signed-in user cannot access it. */
+    public function test_legacy_archive_requires_batch_ownership(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $owner = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $options = new generatoroptions();
+        $options->type = generatoroptions::COURSE;
+        $options->courses = [$this->getDataGenerator()->create_course()->id];
+        $options->amount = 1;
+        $options->ownerid = $owner->id;
+        $options->batchid = DIRECTORY_SEPARATOR === '/' ? 'Old PO\\123' : 'Old PO 123';
+        $timeid = '24112026150000';
+        $path = $CFG->dataroot . "/coupons-{$options->batchid}-{$timeid}.pdf";
+        $this->setAdminUser();
+        (new \block_coupon\coupon\generator())->generate_coupons($options);
+        file_put_contents($path, '%PDF');
+
+        try {
+            files::require_download_access($options->batchid);
+            $this->setUser($owner);
+            ob_start();
+            try {
+                helper::download($options->batchid, $timeid);
+                $this->assertStringContainsString('name="bid" value="' . s($options->batchid) . '"', ob_get_contents());
+            } finally {
+                ob_end_clean();
+            }
+
+            $this->setUser($other);
+            $this->expectException(\required_capability_exception::class);
+            helper::download($options->batchid, $timeid);
+        } finally {
+            $this->assertFileExists($path);
+            unlink($path);
+        }
+    }
+
+    /** Sending a personalized coupon must not split batch ID "0" into per-coupon IDs. */
+    public function test_personalized_sending_preserves_zero_batch_id(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        set_config('personalsendpdf', 0, 'block_coupon');
+        $options = new generatoroptions();
+        $options->type = generatoroptions::COURSE;
+        $options->courses = [$this->getDataGenerator()->create_course()->id];
+        $options->amount = 1;
+        $options->batchid = '0';
+        $generator = new \block_coupon\coupon\generator();
+        $generator->generate_coupons($options);
+        $coupon = $DB->get_record('block_coupon', ['id' => $generator->get_generated_couponids()[0]], '*', MUST_EXIST);
+        $coupon->for_user_email = 'learner@example.com';
+        $coupon->for_user_name = 'Test Learner';
+        $coupon->email_body = 'Here is your coupon.';
+        $coupon->codeonly = 1;
+
+        $sink = $this->redirectEmails();
+        try {
+            [$sent, $batchid] = helper::mail_personalized_coupon($coupon);
+            $this->assertTrue($sent);
+            $this->assertSame('0', $batchid);
+            $this->assertCount(1, $sink->get_messages());
+        } finally {
+            $sink->close();
+        }
+        $this->assertSame('0', $DB->get_field('block_coupon', 'batchid', ['id' => $coupon->id]));
     }
 
     /** Create the same DB record shape as the request controller. */

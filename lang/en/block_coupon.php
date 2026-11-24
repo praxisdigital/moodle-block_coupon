@@ -70,6 +70,7 @@ $string['request:batchname:invalid'] = 'Batch names cannot contain forward slash
 $string['request:batchname:toolong'] = 'Batch names must be {$a} characters or fewer.';
 $string['request:batchname:plaintext'] = 'Enter the batch name as plain text.';
 $string['request:accept:batchname'] = 'Request accepted. Final batch ID: {$a}';
+$string['request:accept:deliveryfailed'] = 'Request accepted, but the coupons could not be delivered automatically. Final batch ID: {$a}';
 $string['privacy:metadata:block_coupon_requests:batchname'] = 'Batch name entered by the requester';
 $string['privacy:metadata:block_coupon:batchid'] = 'Final batch ID of the coupon';
 $string['th:displaybatchname'] = 'Batch name';

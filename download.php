@@ -47,13 +47,13 @@ $heading = 'view:download:heading';
 
 $PAGE->navbar->add(get_string($title, 'block_coupon'));
 
-$params = ['id' => $zipid];
+$params = ['bid' => $batchid, 't' => $timeid];
 $url = new moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', $params);
 $PAGE->set_url($url);
 
 $PAGE->set_title(get_string($title, 'block_coupon'));
 $PAGE->set_heading(get_string($heading, 'block_coupon'));
-$PAGE->set_context($context);
+$PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('standard');
 
 try {
