@@ -32,6 +32,26 @@ use block_coupon\helper;
 final class acceptance {
     /** Accept the request and return its final batch ID and delivery status, or null if already finalized. */
     public static function process(int $id, string $batchname, string $message): ?array {
+        return self::with_delivery_lock($id, static function () use ($id, $batchname, $message): ?array {
+            $record = self::allocate($id, $batchname, $message);
+            return $record === null ? null : self::deliver($record);
+        });
+    }
+
+    /** Retry an unfinished delivery without allocating new coupon keys. */
+    public static function retry(int $id): ?array {
+        global $DB;
+        return self::with_delivery_lock($id, static function () use ($DB, $id): ?array {
+            $record = $DB->get_record('block_coupon_requests', ['id' => $id, 'finalized' => 1, 'denied' => 0]);
+            if (!$record || $record->deliverydata === null) {
+                return null;
+            }
+            return self::deliver($record);
+        });
+    }
+
+    /** Reserve and generate the batch once, holding the global lock only for allocation. */
+    private static function allocate(int $id, string $batchname, string $message): ?\stdClass {
         global $DB;
 
         $error = name::error($batchname);
@@ -40,12 +60,12 @@ final class acceptance {
         }
         $batchname = trim($batchname);
 
-        $batch = name::synchronise(static function () use ($DB, $id, $batchname): ?array {
+        return name::synchronise(static function () use ($DB, $id, $batchname, $message): ?\stdClass {
             $record = $DB->get_record('block_coupon_requests', ['id' => $id], '*', MUST_EXIST);
             if ($record->finalized) {
                 return null;
             }
-            $user = \core_user::get_user($record->userid, '*', MUST_EXIST);
+            \core_user::get_user($record->userid, '*', MUST_EXIST);
             $options = unserialize($record->configuration);
             if ($batchname !== '') {
                 $options->batchid = name::next_available($batchname);
@@ -60,23 +80,40 @@ final class acceptance {
                 $generator->generate_coupons($options);
                 $record->denied = 0;
                 $record->finalized = 1;
+                $record->configuration = serialize($options);
+                $record->deliverydata = json_encode([
+                    'couponids' => $generator->get_generated_couponids(),
+                    'message' => $message,
+                ], JSON_THROW_ON_ERROR);
+                $record->timemodified = time();
                 $DB->update_record('block_coupon_requests', $record);
 
                 $transaction->allow_commit();
             } catch (\Throwable $error) {
                 $transaction->rollback($error);
             }
-            return [$user, $options, $generator->get_generated_couponids()];
+            return $record;
         });
-        if ($batch === null) {
-            return null;
-        }
+    }
 
-        // Rendering and SMTP must not hold up creation of unrelated batches.
-        [$user, $options, $couponids] = $batch;
+    /** Deliver the original keys and retain retry data only if delivery did not succeed. */
+    private static function deliver(\stdClass $record): array {
+        global $DB;
+        $options = unserialize($record->configuration);
+        $delivery = json_decode($record->deliverydata, true, 512, JSON_THROW_ON_ERROR);
+        $couponids = $delivery['couponids'];
         $coupons = $DB->get_records_list('block_coupon', 'id', $couponids);
+        $user = \core_user::get_user($record->userid);
+        if (!$user || $user->deleted || !$coupons || count($coupons) !== count($couponids)) {
+            throw new \block_coupon\exception('request:delivery:unavailable');
+        }
+        foreach ($coupons as $coupon) {
+            if ((int) $coupon->ownerid !== (int) $record->userid || $coupon->batchid !== $options->batchid) {
+                throw new \block_coupon\exception('request:delivery:unavailable');
+            }
+        }
         try {
-            [$delivered] = helper::mail_requested_coupons($user, $coupons, $options, $message);
+            [$delivered] = helper::mail_requested_coupons($user, $coupons, $options, $delivery['message']);
         } catch (\Throwable $error) {
             // The request is already finalized. Record the failed delivery, not a second acceptance attempt.
             foreach ($couponids as $couponid) {
@@ -90,6 +127,27 @@ final class acceptance {
             }
             $delivered = false;
         }
+        if ($delivered) {
+            $DB->update_record('block_coupon_requests', (object) [
+                'id' => $record->id,
+                'deliverydata' => null,
+                'timemodified' => time(),
+            ]);
+        }
         return ['batchid' => $options->batchid, 'delivered' => $delivered];
+    }
+
+    /** Serialize acceptance and retry for a single request without blocking other deliveries. */
+    private static function with_delivery_lock(int $id, callable $callback): mixed {
+        $factory = \core\lock\lock_config::get_lock_factory('block_coupon_request_delivery');
+        $lock = $factory->get_lock('block_coupon_request_delivery_' . $id, 0);
+        if (!$lock) {
+            throw new \block_coupon\exception('request:delivery:busy');
+        }
+        try {
+            return $callback();
+        } finally {
+            $lock->release();
+        }
     }
 }

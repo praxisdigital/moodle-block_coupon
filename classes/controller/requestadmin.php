@@ -87,6 +87,12 @@ class requestadmin {
             case 'acceptrequest':
                 $this->process_accept_request();
                 break;
+            case 'deliveries':
+                $this->process_request_overview(true);
+                break;
+            case 'resendrequest':
+                $this->process_resend_request();
+                break;
             case 'denyrequest':
                 $this->process_deny_request();
                 break;
@@ -327,14 +333,41 @@ class requestadmin {
     /**
      * Display requests overview table
      */
-    protected function process_request_overview() {
-        $table = new \block_coupon\tables\requests();
-        $table->baseurl = new \moodle_url($this->page->url->out());
+    protected function process_request_overview(bool $deliveries = false) {
+        $table = new \block_coupon\tables\requests($deliveries);
+        $table->baseurl = new \moodle_url($this->page->url, ['action' => $deliveries ? 'deliveries' : 'requests']);
 
         echo $this->output->header();
         echo $this->renderer->get_tabs($this->page->context, 'cprequests', $this->page->url->params());
+        echo \html_writer::div(\html_writer::link(
+            new \moodle_url($this->page->url, ['action' => $deliveries ? 'requests' : 'deliveries']),
+            get_string($deliveries ? 'tab:requests' : 'request:delivery:failedlist', 'block_coupon')
+        ), 'mb-3');
         echo $table->render(25);
         echo $this->output->footer();
+    }
+
+    /** Resend a failed request from the administrator's delivery list. */
+    protected function process_resend_request(): void {
+        require_capability('block/coupon:generatecoupons', \context_system::instance());
+        require_sesskey();
+        $redirect = new \moodle_url($this->page->url, ['action' => 'deliveries']);
+        if (!data_submitted()) {
+            redirect($redirect);
+        }
+        try {
+            $result = \block_coupon\app\request\acceptance::retry(required_param('itemid', PARAM_INT));
+            if ($result === null) {
+                \core\notification::warning(get_string('request:delivery:notpending', 'block_coupon'));
+            } else if ($result['delivered']) {
+                \core\notification::success(get_string('request:delivery:resent', 'block_coupon', s($result['batchid'])));
+            } else {
+                \core\notification::warning(get_string('request:accept:deliveryfailed', 'block_coupon', s($result['batchid'])));
+            }
+        } catch (\block_coupon\exception $error) {
+            \core\notification::warning($error->getMessage());
+        }
+        redirect($redirect);
     }
 
     /**
@@ -407,7 +440,11 @@ class requestadmin {
         if ($mform->is_cancelled()) {
             redirect($redirect);
         } else if ($data = $mform->get_data()) {
-            $result = \block_coupon\app\request\acceptance::process($itemid, $data->batchname, $data->message['text']);
+            try {
+                $result = \block_coupon\app\request\acceptance::process($itemid, $data->batchname, $data->message['text']);
+            } catch (\block_coupon\exception $error) {
+                redirect($redirect, $error->getMessage(), null, \core\output\notification::NOTIFY_WARNING);
+            }
             if ($result !== null) {
                 $batchid = s($result['batchid']);
                 if ($result['delivered']) {

@@ -571,5 +571,14 @@ function xmldb_block_coupon_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026112400, 'coupon');
     }
 
+    if ($oldversion < 2026112500) {
+        $table = new xmldb_table('block_coupon_requests');
+        $field = new xmldb_field('deliverydata', XMLDB_TYPE_TEXT, null, null, null, null, null, 'batchname');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_block_savepoint(true, 2026112500, 'coupon');
+    }
+
     return true;
 }

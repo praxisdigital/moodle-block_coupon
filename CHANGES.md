@@ -1,4 +1,4 @@
-Version 4.4.4.7 (build 2026112400)
+Version 4.4.4.7 (build 2026112500)
 ** Course and cohort coupon request forms replace Client reference with an optional Batch name, such as a purchase
    order or invoice number. The name is saved with the request and is a sortable column in both the administrator's
    request list and the requester's own request list.
@@ -12,6 +12,8 @@ Version 4.4.4.7 (build 2026112400)
    Both the requested name and the final Batch ID, including any suffix, are limited to 255 characters.
 ** Emailed download links for alternate recipients expire after seven days or when the archive is downloaded.
    Batch owners can still access any remaining archive through Moodle.
+** Administrators can resend the original coupons from Coupon requests > Failed deliveries. The retry keeps the
+   final batch ID and does not create new coupons.
 ** Fixed coupon redemption trying to redirect after rendering the form, manual coupon generation failing on
    invalid recipient input, and stale coupon request-user deletion links causing record warnings (#19).
 

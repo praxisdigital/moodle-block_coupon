@@ -80,6 +80,60 @@ final class request_batch_test extends provider_testcase {
         $this->assertSame('Original order', $DB->get_field('block_coupon_requests', 'batchname', ['id' => $second]));
     }
 
+    /** A failed delivery is listed, and retrying sends the original keys without duplicating them. */
+    public function test_failed_delivery_can_be_retried_without_generating_new_coupons(): void {
+        global $DB, $PAGE;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $owner = $this->getDataGenerator()->create_user();
+        $DB->set_field('user', 'email', '', ['id' => $owner->id]);
+        $options = new generatoroptions();
+        $options->amount = 2;
+        $options->ownerid = $owner->id;
+        $options->type = generatoroptions::COURSE;
+        $options->courses = [$this->getDataGenerator()->create_course()->id];
+        $id = $this->create_request($options, 'Retry PO');
+        $message = 'Original acceptance message';
+
+        $sink = $this->redirectEmails();
+        try {
+            $this->assertSame(['batchid' => 'Retry PO', 'delivered' => false], acceptance::process($id, 'Retry PO', $message));
+            $this->assertDebuggingCalled('Can not send email to user without email: ' . $owner->id);
+            $request = $DB->get_record('block_coupon_requests', ['id' => $id], '*', MUST_EXIST);
+            $this->assertEquals(1, $request->finalized);
+            $delivery = json_decode($request->deliverydata, true);
+            $this->assertSame($message, $delivery['message']);
+            $before = $DB->get_records_menu('block_coupon', ['batchid' => 'Retry PO'], 'id ASC', 'id, submission_code');
+            $this->assertCount(2, $before);
+
+            $url = new \moodle_url('/blocks/coupon/view/requests/admin.php', ['action' => 'deliveries']);
+            $PAGE->set_url($url);
+            $table = new \block_coupon\tables\requests(true);
+            $table->baseurl = $url;
+            ob_start();
+            try {
+                $table->render(25, false);
+                $html = ob_get_contents();
+                $this->assertStringContainsString('Retry PO', $html);
+                $this->assertStringContainsString('Resend coupons', $html);
+                $this->assertStringContainsString('method="post"', $html);
+                $this->assertStringContainsString('name="sesskey"', $html);
+            } finally {
+                ob_end_clean();
+            }
+
+            $DB->set_field('user', 'email', $owner->email, ['id' => $owner->id]);
+            $this->assertSame(['batchid' => 'Retry PO', 'delivered' => true], acceptance::retry($id));
+            $this->assertCount(1, $sink->get_messages());
+            $this->assertNull(acceptance::retry($id));
+            $this->assertCount(1, $sink->get_messages());
+            $this->assertNull($DB->get_field('block_coupon_requests', 'deliverydata', ['id' => $id]));
+            $this->assertSame($before, $DB->get_records_menu('block_coupon', ['batchid' => 'Retry PO'], 'id ASC', 'id, submission_code'));
+        } finally {
+            $sink->close();
+        }
+    }
+
     /** Ensure uniqueness also accounts for names taken by the admin generator. */
     public function test_suffix_fits_and_skips_used_ids(): void {
         global $DB;
