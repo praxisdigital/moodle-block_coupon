@@ -44,6 +44,8 @@ require_once($CFG->libdir . '/formslib.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course extends \moodleform {
+    use \block_coupon\forms\batchname;
+
     /**
      * Allowed options for user
      * @var \stdClass
@@ -176,8 +178,7 @@ class course extends \moodleform {
             $mform->setConstant('enrolment_period', $this->get_option($this->options, 'enrolperioddefault'));
         }
 
-        $mform->addElement('text', 'clientref', get_string('clientref', 'block_coupon'));
-        $mform->setType('clientref', PARAM_TEXT);
+        $this->add_batchname_field();
 
         $this->add_action_buttons(true, get_string('request:coupons', 'block_coupon'));
     }

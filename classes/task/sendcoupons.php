@@ -78,7 +78,7 @@ class sendcoupons extends \core\task\scheduled_task {
                 break;
         }
         $batchid = $DB->get_field_sql($sql, [$time], IGNORE_MISSING);
-        if (empty($batchid)) {
+        if ($batchid === false || (string) $batchid === '') {
             mtrace("No batches found");
             return;
         }

@@ -382,7 +382,7 @@ class helper {
      * Load recipients from a CSV string
      * @param string $recipientsstr
      * @param string $delimiter
-     * @return boolean|\stdClass
+     * @return array|false Parsed recipients, or false if the required columns are missing or a row is incomplete.
      */
     final public static function get_recipients_from_csv($recipientsstr, $delimiter = ',') {
         $recipients = [];
@@ -391,20 +391,21 @@ class helper {
         // Split up in rows.
         $expectedcolumns = ['e-mail', 'gender', 'name'];
         $recipientsstr = str_replace("\r", '', $recipientsstr);
-        if (!$csvdata = str_getcsv($recipientsstr, "\n")) {
-            return false;
-        }
+        $csvdata = explode("\n", trim($recipientsstr));
         // Split up in columns.
         foreach ($csvdata as &$row) {
             // Get the next row.
-            $row = str_getcsv($row, $delimiter);
+            if ($count > 0 && trim($row) === '') {
+                continue;
+            }
+            $row = str_getcsv($row, $delimiter, '"', '\\');
 
             // Check if we're looking at the first row.
             if ($count == 0) {
                 $expectedrow = [];
                 // Set the columns we'll need.
                 foreach ($row as $key => &$column) {
-                    $column = trim(strtolower($column));
+                    $column = trim(strtolower((string) $column));
                     if (!in_array($column, $expectedcolumns)) {
                         continue;
                     }
@@ -412,7 +413,7 @@ class helper {
                     $expectedrow[$key] = $column;
                 }
                 // If we're missing columns.
-                if (count($expectedcolumns) != count($expectedrow)) {
+                if (count($expectedcolumns) !== count($expectedrow) || array_diff($expectedcolumns, $expectedrow)) {
                     return false;
                 }
 
@@ -425,6 +426,9 @@ class helper {
                 continue;
             }
 
+            if (!isset($row[$namekey], $row[$emailkey], $row[$genderkey])) {
+                return false;
+            }
             $recipient = new \stdClass();
             $recipient->name = trim($row[$namekey]);
             $recipient->email = trim($row[$emailkey]);
@@ -443,10 +447,15 @@ class helper {
      * @return array|true true if valid, array or error messages if invalid
      */
     final public static function validate_coupon_recipients($csvdata, $delimiter) {
+        return self::validate_parsed_coupon_recipients(self::get_recipients_from_csv($csvdata, $delimiter));
+    }
+
+    /** Validate the parsed input before using it to generate coupons. */
+    public static function validate_parsed_coupon_recipients(array|false $recipients): string|bool {
         $error = false;
         $maxcoupons = get_config('block_coupon', 'max_coupons');
 
-        if (!$recipients = self::get_recipients_from_csv($csvdata, $delimiter)) {
+        if ($recipients === false) {
             // Required columns aren't found in the csv.
             $error = get_string('error:recipients-columns-missing', 'block_coupon', 'e-mail,gender,name');
         } else {
@@ -460,7 +469,9 @@ class helper {
                 // Lets run through the file to check on email addresses.
                 foreach ($recipients as $recipient) {
                     if (!filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
-                        $error = get_string('error:recipients-email-invalid', 'block_coupon', $recipient);
+                        $error = get_string('error:recipients-email-invalid', 'block_coupon', (object) [
+                            'email' => s($recipient->email),
+                        ]);
                     }
                 }
             }
@@ -1190,12 +1201,12 @@ class helper {
 
         // Prepare time identifier and batchid.
         $ts = date('dmYHis');
-        if (empty($generatoroptions->batchid)) {
+        if ((string) $generatoroptions->batchid === '') {
             $generatoroptions->batchid = uniqid();
         }
 
         // Generate!
-        static::generate_coupons($coupons, $generatoroptions, $ts);
+        [, $archive] = static::generate_coupons($coupons, $generatoroptions, $ts);
 
         if (!empty($generatoroptions->emailto)) {
             $user->email = $generatoroptions->emailto;
@@ -1203,10 +1214,7 @@ class helper {
 
         $from = \core_user::get_noreply_user();
 
-        $downloadurl = new \moodle_url(
-            $CFG->wwwroot . '/blocks/coupon/download.php',
-            ['bid' => $generatoroptions->batchid, 't' => $ts]
-        );
+        $downloadurl = \block_coupon\app\batch\access::url($generatoroptions->batchid, $ts, $archive);
         $a = new \stdClass();
         $a->fullname = fullname($user);
         $a->signoff = generate_email_signoff();
@@ -1337,7 +1345,7 @@ class helper {
 
         // Prepare time identifier and batchid.
         $ts = date('dmYHis');
-        if (empty($coupon->batchid)) {
+        if ((string) $coupon->batchid === '') {
             $coupon->batchid = uniqid();
             $coupon->timemodified = time();
             $DB->update_record('block_coupon', $coupon);
@@ -1647,30 +1655,35 @@ class helper {
      * @param string $batchid
      * @param string $timeid
      * @param boolean $dodl
+     * @param string $token Optional token from a delivery email.
      */
-    public static function download($batchid, $timeid, $dodl = false) {
+    public static function download($batchid, $timeid, $dodl = false, string $token = '') {
         global $CFG, $OUTPUT;
-        $basename = "coupons-{$batchid}-{$timeid}";
-        if (file_exists("{$CFG->dataroot}/{$basename}.zip")) {
-            $filename = "{$CFG->dataroot}/{$basename}.zip";
-        } else if (file_exists("{$CFG->dataroot}/{$basename}.pdf")) {
-            $filename = "{$CFG->dataroot}/{$basename}.pdf";
+        $zip = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'zip');
+        $pdf = $CFG->dataroot . '/' . \block_coupon\app\batch\files::path($batchid, $timeid, 'pdf');
+        if (is_file($zip)) {
+            $filename = $zip;
+        } else if (is_file($pdf)) {
+            $filename = $pdf;
         } else {
+            \block_coupon\app\batch\access::require_download($batchid);
             $a = (object) [
-                'batchid' => $batchid,
+                'batchid' => s($batchid),
                 'timeid' => $timeid,
             ];
-            throw new \block_coupon\exception('err:download-not-exists', $a);
+            throw new \block_coupon\exception('err:download-not-exists', '', $a);
         }
 
+        \block_coupon\app\batch\access::require_download($batchid, $filename, $token);
+
         if (!$dodl) {
-            $url = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', ['bid' => $batchid, 't' => $timeid, 'dl' => 1]);
+            $url = \block_coupon\app\batch\access::url($batchid, $timeid, token: $token, download: true);
             $button = $OUTPUT->single_button($url, get_string('downloadcoupons:buttontext', 'block_coupon'), 'get');
             echo get_string('downloadcoupons:text', 'block_coupon', $button);
         } else {
-            self::dlh(basename($filename), filesize($filename));
+            self::dlh(str_replace(['"', '\\'], '_', basename($filename)), filesize($filename));
             readfile($filename);
-            unlink($filename);
+            \block_coupon\app\batch\files::delete_archive($filename);
         }
     }
 
@@ -1733,11 +1746,11 @@ class helper {
 
         // Prepare time identifier and batchid.
         $ts = date('dmYHis');
-        if (empty($generatoroptions->batchid)) {
+        if ((string) $generatoroptions->batchid === '') {
             $generatoroptions->batchid = uniqid();
         }
         // Generate!
-        [$filename, $relativefilename] = static::generate_coupons($coupons, $generatoroptions, $ts);
+        [, $archive] = static::generate_coupons($coupons, $generatoroptions, $ts);
 
         // Attempt to send email...
         global $USER;
@@ -1762,10 +1775,7 @@ class helper {
         if ($emailbody !== false) {
             $messagehtml = $emailbody;
         } else {
-            $downloadurl = new \moodle_url(
-                $CFG->wwwroot . '/blocks/coupon/download.php',
-                ['bid' => $generatoroptions->batchid, 't' => $ts]
-            );
+            $downloadurl = \block_coupon\app\batch\access::url($generatoroptions->batchid, $ts, $archive);
             $bodyparams = [
                 'fullname' => fullname($USER),
                 'signoff' => generate_email_signoff(),
@@ -1841,7 +1851,7 @@ class helper {
 
             // Initiate archive.
             $zip = new \ZipArchive();
-            $relativefilename = "coupons-{$generatoroptions->batchid}-{$ts}.zip";
+            $relativefilename = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'zip', true);
             $filename = "{$CFG->dataroot}/{$relativefilename}";
             if (file_exists($filename)) {
                 unlink($filename);
@@ -1866,7 +1876,7 @@ class helper {
 
             return [$relativefilename, $filename];
         } else {
-            $rfn = "coupons-{$generatoroptions->batchid}-{$ts}.pdf";
+            $rfn = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'pdf', true);
             [$relativefilename, $filename] = $template->generate_pdf($coupons, false, null, false, $rfn);
             return [$relativefilename, $filename];
         }
@@ -1888,7 +1898,7 @@ class helper {
 
             // Initiate archive.
             $zip = new \ZipArchive();
-            $relativefilename = "coupons-{$generatoroptions->batchid}-{$ts}.zip";
+            $relativefilename = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'zip', true);
             $filename = "{$CFG->dataroot}/{$relativefilename}";
             if (file_exists($filename)) {
                 unlink($filename);
@@ -1931,7 +1941,7 @@ class helper {
             $pdfgen->set_templatebotright(get_string('default-coupon-page-template-botright', 'block_coupon'));
             $pdfgen->generate($coupons);
 
-            $relativefilename = "coupons-{$generatoroptions->batchid}-{$ts}.pdf";
+            $relativefilename = \block_coupon\app\batch\files::path($generatoroptions->batchid, $ts, 'pdf', true);
             $filename = "{$CFG->dataroot}/{$relativefilename}";
             if (file_exists($filename)) {
                 unlink($filename);

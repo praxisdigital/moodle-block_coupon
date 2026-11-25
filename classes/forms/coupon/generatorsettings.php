@@ -134,10 +134,13 @@ class generatorsettings extends baseform {
      * @return array
      */
     public function validation($data, $files) {
-        global $DB;
         // Make sure batch id is unique if provided.
         $err = parent::validation($data, $files);
-        if (!empty($data['batchid']) && $DB->record_exists('block_coupon', ['batchid' => $data['batchid']])) {
+        $batchid = (string) ($data['batchid'] ?? '');
+        $error = \block_coupon\app\batch\name::error($batchid);
+        if ($error !== null) {
+            $err['batchid'] = get_string($error, 'block_coupon', \block_coupon\app\batch\name::MAX_LENGTH);
+        } else if ($batchid !== '' && \block_coupon\app\batch\name::exists($batchid)) {
             $err['batchid'] = get_string('err:batchid', 'block_coupon');
         }
         helper::validate_generator_flags($data, $err);

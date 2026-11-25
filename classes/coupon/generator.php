@@ -117,8 +117,13 @@ class generator implements icoupongenerator {
         // Validate options.
         $this->validate_options($options);
 
-        // And generate.
-        return $this->generate($options);
+        // Check the final ID again under the lock: the settings form may have run much earlier.
+        return \block_coupon\app\batch\name::synchronise(function () use ($options) {
+            if (\block_coupon\app\batch\name::exists($options->batchid)) {
+                throw new exception('err:batchid');
+            }
+            return $this->generate($options);
+        });
     }
 
     /**
@@ -136,7 +141,7 @@ class generator implements icoupongenerator {
             $options->ownerid = $USER->id;
         }
         // If options have no batch id, create it.
-        if (empty($options->batchid)) {
+        if ((string) $options->batchid === '') {
             $options->batchid = md5(uniqid((string)microtime(true), true));
         }
     }

@@ -68,6 +68,9 @@ class requestdetails implements \renderable, \templatable {
         $data->generatoroptions = json_decode(json_encode($generatoroptions));
 
         $data->clientref = $this->instance->clientref;
+        $data->hasclientref = $data->clientref !== null && $data->clientref !== '';
+        $data->batchname = $this->instance->batchname;
+        $data->hasbatchname = $data->batchname !== null && $data->batchname !== '';
 
         $data->amount = $generatoroptions->amount;
         $data->codesize = $generatoroptions->codesize;

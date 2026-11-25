@@ -43,16 +43,20 @@ require_once($CFG->libdir . '/formslib.php');
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class accept extends \moodleform {
+    use \block_coupon\forms\batchname;
+
     /**
      * form definition
      */
     public function definition() {
         $mform = & $this->_form;
 
-        [$heading, $info] = $this->_customdata;
+        [$heading, $info, $batchname] = $this->_customdata;
 
         $mform->addElement('header', 'header', $heading);
         $mform->addElement('static', 'info', '', $info);
+        $this->add_batchname_field();
+        $mform->setDefault('batchname', $batchname);
 
         $attributes = ['maxfiles' => 0];
         $mform->addElement('editor', 'message', get_string('request:message', 'block_coupon'), $attributes);

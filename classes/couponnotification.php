@@ -92,7 +92,7 @@ class couponnotification {
             ['id' => helper::find_block_instance_id(), 'tab' => 'unused']
         );
 
-        $downloadurl = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', ['bid' => $batchid, 't' => $ts]);
+        $downloadurl = \block_coupon\app\batch\access::url($batchid, $ts);
 
         $a = new \stdClass();
         $a->fullname = fullname($recipient);
@@ -149,7 +149,7 @@ class couponnotification {
             ['id' => helper::find_block_instance_id()]
         );
 
-        $downloadurl = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', ['bid' => $batchid, 't' => $ts]);
+        $downloadurl = \block_coupon\app\batch\access::url($batchid, $ts);
 
         $a = new \stdClass();
         $a->fullname = fullname($recipient);

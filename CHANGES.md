@@ -1,3 +1,22 @@
+Version 4.4.4.7 (build 2026112500)
+** Course and cohort coupon request forms replace Client reference with an optional Batch name, such as a purchase
+   order or invoice number. The name is saved with the request and is a sortable column in both the administrator's
+   request list and the requester's own request list.
+** The acceptance form is prefilled with the requested Batch name. Administrators can add, change, or clear it.
+   Existing Client references remain visible in request details and prefill the acceptance form for pending legacy
+   requests that have no Batch name.
+** On acceptance, a blank Batch name keeps the generated Batch ID. If the chosen name is already in use, the next
+   available numeric suffix is added automatically (for example, `PO-123`, `PO-123-2`, `PO-123-3`). The acceptance
+   flow shows the final Batch ID, which appears in My coupons and can be found with the My Batch ID filter.
+** Batch names are plain text. Forward slashes (`/`), backslashes (`\`), and control characters are rejected.
+   Both the requested name and the final Batch ID, including any suffix, are limited to 255 characters.
+** Emailed download links for alternate recipients expire after seven days or when the archive is downloaded.
+   Batch owners can still access any remaining archive through Moodle.
+** Administrators can resend the original coupons from Coupon requests > Failed deliveries. The retry keeps the
+   final batch ID and does not create new coupons.
+** Fixed coupon redemption trying to redirect after rendering the form, manual coupon generation failing on
+   invalid recipient input, and stale coupon request-user deletion links causing record warnings (#19).
+
 Version 4.4.4.6 (build 2026111600)
 ** Fixed request-user edit page crashing: the findcourses and findcohorts form elements now accept null options
    (QuickForm passes null when addElement() has no options; findcourses threw a TypeError, findcohorts failed in

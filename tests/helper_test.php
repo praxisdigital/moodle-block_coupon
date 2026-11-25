@@ -30,6 +30,66 @@ use block_coupon\coupon\generatoroptions;
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(\block_coupon\helper::class)]
 final class helper_test extends \advanced_testcase {
+    /** Manual generation keeps bad recipient rows on the form and supplies only validated recipients. */
+    public function test_manual_recipient_validation(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        set_config('max_coupons', 50, 'block_coupon');
+        $options = new generatoroptions();
+        $options->type = generatoroptions::COHORT;
+        $options->generatormethod = 'manual';
+        $form = new \block_coupon\forms\coupon\ctpage(new \moodle_url('/blocks/coupon/view/generator/cohort.php'), [$options]);
+        $field = 'coupon_recipients_manual';
+
+        foreach (['Bad header', 'E-mail,Gender,Gender', "E-mail,Gender,Name\nlearner@example.com"] as $input) {
+            $this->assertSame(
+                get_string('error:recipients-columns-missing', 'block_coupon', 'e-mail,gender,name'),
+                $form->validation([$field => $input], [])[$field]
+            );
+            $this->assertSame([], $form->get_manual_recipients());
+        }
+        $input = "E-mail,Gender,Name\r\n\r\n";
+        $this->assertSame(get_string('error:recipients-empty', 'block_coupon'), $form->validation([$field => $input], [])[$field]);
+        $this->assertSame([], $form->validation([$field => $input . 'learner@example.com,,"Learner, Test"'], []));
+        $this->assertCount(1, $form->get_manual_recipients());
+        $this->assertSame('Learner, Test', $form->get_manual_recipients()[0]->name);
+        $this->assertArrayHasKey($field, $form->validation([$field => $input . 'invalid-address,,Learner'], []));
+        $this->assertSame([], $form->get_manual_recipients());
+    }
+
+    /** An unknown coupon code is a field error rather than an exception from the form. */
+    public function test_unknown_coupon_code_is_a_form_error(): void {
+        $form = new \block_coupon\forms\coupon\validator(new \moodle_url('/blocks/coupon/view/input_coupon.php'));
+        $this->assertSame(
+            ['coupon_code' => get_string('error:invalid_coupon_code', 'block_coupon')],
+            $form->validation(['coupon_code' => 'UNKNOWNTESTCODE'], [])
+        );
+    }
+
+    /** Extended claim workflow notifications should be shown as field errors. */
+    public function test_used_coupon_notification_is_a_form_error(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        set_config('claimworkflow', 2, 'block_coupon');
+        $options = new generatoroptions();
+        $options->type = generatoroptions::COURSE;
+        $options->courses = [$this->getDataGenerator()->create_course()->id];
+        $options->amount = 1;
+        $generator = new generator();
+        $generator->generate_coupons($options);
+        $coupon = $DB->get_record('block_coupon', ['id' => $generator->get_generated_couponids()[0]], '*', MUST_EXIST);
+        $coupon->claimed = 1;
+        $coupon->userid = $this->getDataGenerator()->create_user()->id;
+        $DB->update_record('block_coupon', $coupon);
+
+        $form = new \block_coupon\forms\coupon\validator(new \moodle_url('/blocks/coupon/view/input_coupon.php'));
+        $this->assertSame(
+            ['coupon_code' => get_string('error:coupon_already_used_other', 'block_coupon')],
+            $form->validation(['coupon_code' => $coupon->submission_code], [])
+        );
+    }
+
     /**
      * Data provider for test_get_findcourses_dropdown_courseids.
      *

@@ -32,7 +32,6 @@ use core_external\external_value;
 use core_external\external_single_structure;
 use core_external\external_multiple_structure;
 use core_external\external_function_parameters;
-use Exception;
 
 /**
  * Webservices implementation for block_coupon
@@ -901,9 +900,11 @@ class block_coupon_external extends external_api {
                 'query' => $query,
                 'owneronly' => $owneronly,
             ]);
-            // Nice and easy, call extract() so we have nicely extracted params.
-            extract($params); // @codingStandardsIgnoreLine AND I DO ALLOW THIS SINCE DATA IS CLEANED ALREADY.
-
+            $context = context_system::instance();
+            self::validate_context($context);
+            $query = $params['query'];
+            $owneronly = $params['owneronly'] || !has_capability('block/coupon:viewallreports', $context);
+            $params = [];
             if ($owneronly) {
                 $where[] = 'ownerid = :ownerid';
                 $params['ownerid'] = $USER->id;
@@ -916,7 +917,7 @@ class block_coupon_external extends external_api {
             $sql = "FROM {block_coupon}
                  WHERE " . implode(" AND ", $where);
 
-            $counter = $DB->get_field_sql('SELECT COUNT(batchid) ' . $sql, $params);
+            $counter = $DB->get_field_sql('SELECT COUNT(DISTINCT batchid) ' . $sql, $params);
             $maxitems = 100;
             if ($counter > $maxitems) {
                 return (object)[
@@ -928,7 +929,7 @@ class block_coupon_external extends external_api {
             }
 
             $sql .= " ORDER BY batchid ASC";
-            $rs = $DB->get_fieldset_sql('SELECT batchid ' . $sql, $params);
+            $rs = $DB->get_fieldset_sql('SELECT DISTINCT batchid ' . $sql, $params);
             return (object)[
                 'maxresults' => $maxitems,
                 'data' => $rs,

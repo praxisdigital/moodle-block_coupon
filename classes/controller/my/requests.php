@@ -228,7 +228,7 @@ class requests {
             $record->id = 0;
             $record->userid = $instance->userid;
             $record->configuration = serialize($generatoroptions);
-            $record->clientref = $data->clientref;
+            $record->batchname = trim($data->batchname) !== '' ? trim($data->batchname) : null;
             $record->denied = 0;
             $record->finalized = 0;
             $record->timecreated = time();
@@ -284,7 +284,7 @@ class requests {
             $record->id = 0;
             $record->userid = $instance->userid;
             $record->configuration = serialize($generatoroptions);
-            $record->clientref = $data->clientref;
+            $record->batchname = trim($data->batchname) !== '' ? trim($data->batchname) : null;
             $record->denied = 0;
             $record->finalized = 0;
             $record->timecreated = time();

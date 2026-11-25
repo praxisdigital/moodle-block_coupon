@@ -47,6 +47,24 @@ Met deze coupon kun je maximaal {$a->maxamount} cursus(sen) kiezen.';
 $string['cleanup:confirm:confirmmessage'] = 'Ja, ik wil de coupons met deze opties verwijderen';
 $string['cleanup:confirm:header'] = 'Bevestig a.u.b. het verwijderen van coupons met de volgende opties';
 $string['clientref'] = 'Klant referentie';
+$string['request:batchname'] = 'Batchnaam';
+$string['request:batchname:invalid'] = 'Een batchnaam mag geen schuine strepen (/), backslashes (\\) of stuurtekens bevatten.';
+$string['request:batchname:toolong'] = 'Een batchnaam mag maximaal {$a} tekens bevatten.';
+$string['request:batchname:plaintext'] = 'Voer de batchnaam in als platte tekst.';
+$string['request:accept:batchname'] = 'Aanvraag goedgekeurd. Definitieve batch-ID: {$a}';
+$string['request:accept:deliveryfailed'] = 'De coupons voor batch {$a} konden niet worden gemaild. Probeer het opnieuw onder Mislukte bezorgingen.';
+$string['request:delivery:busy'] = 'Deze aanvraag wordt al verwerkt. Probeer het opnieuw nadat de pagina is vernieuwd.';
+$string['request:delivery:failedlist'] = 'Mislukte bezorgingen';
+$string['request:delivery:notpending'] = 'Er is voor deze aanvraag geen bezorging om opnieuw te proberen.';
+$string['request:delivery:resend'] = 'Coupons opnieuw verzenden';
+$string['request:delivery:resent'] = 'Coupons verzonden. Definitieve batch-ID: {$a}';
+$string['request:delivery:unavailable'] = 'De coupons kunnen niet opnieuw worden verzonden omdat de oorspronkelijke batch of ontvanger niet meer beschikbaar is.';
+$string['privacy:metadata:block_coupon_requests:deliverydata'] = 'Oorspronkelijke coupon-ID’s en goedkeuringsbericht, bewaard totdat de bezorging slaagt';
+$string['privacy:metadata:block_coupon_requests:batchname'] = 'Batchnaam opgegeven door de aanvrager';
+$string['privacy:metadata:block_coupon_requests:clientref'] = 'Oorspronkelijke klantreferentie';
+$string['privacy:metadata:block_coupon:batchid'] = 'Definitieve batch-ID van de coupon';
+$string['delete:requestuser:notfound'] = 'Deze gebruiker voor couponverzoeken is niet gevonden. De link is mogelijk verouderd.';
+$string['th:displaybatchname'] = 'Batchnaam';
 $string['cohort'] = 'cohort';
 $string['confirm_coupons_sent_body'] = '
 Hallo,<br /><br />

@@ -388,9 +388,7 @@ class cohortcoupon {
                     $generatoroptions->csvdelimitername = 'comma'; // Forced!
                     $generatoroptions->senddate = $data->date_send_coupons_manual;
                     $generatoroptions->emailbody = $data->email_body_manual['text'];
-                    // We'll get users right away.
-                    $delimiter = helper::get_delimiter($generatoroptions->csvdelimitername);
-                    $generatoroptions->recipients = helper::get_recipients_from_csv($data->coupon_recipients_manual, $delimiter);
+                    $generatoroptions->recipients = $mform->get_manual_recipients();
                     // Set amount, otherwise the generator won't do anything.
                     $generatoroptions->amount = count($generatoroptions->recipients);
                     $nextpage = 8;
@@ -514,7 +512,7 @@ class cohortcoupon {
                     $coupons = $DB->get_records_list('block_coupon', 'id', $generator->get_generated_couponids());
                     [$rs, $batchid, $ts] = helper::mail_coupons($coupons, $generatoroptions, false, false);
 
-                    $dlurl = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', ['bid' => $batchid, 't' => $ts]);
+                    $dlurl = \block_coupon\app\batch\access::url($batchid, $ts);
                     $dllink = \html_writer::link($dlurl, get_string('here', 'block_coupon'));
                     if ($rs) {
                         $redirectmessage = get_string('coupons_generated', 'block_coupon', $dllink);

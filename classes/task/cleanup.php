@@ -94,5 +94,6 @@ class cleanup extends \core\task\scheduled_task {
         }
         // Standard cleaning, just to be sure.
         helper::cleanup_invalid_links();
+        \block_coupon\app\batch\download_token::prune();
     }
 }

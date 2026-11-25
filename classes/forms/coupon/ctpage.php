@@ -42,6 +42,13 @@ use block_coupon\helper;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ctpage extends baseform {
+    /** @var array Valid manual recipients from this submission. */
+    private array $manualrecipients = [];
+
+    /** Return the parsed recipients after a successful manual submission. */
+    public function get_manual_recipients(): array {
+        return $this->manualrecipients;
+    }
     /**
      * form definition
      */
@@ -125,6 +132,7 @@ class ctpage extends baseform {
                     get_string("label:coupon_recipients", 'block_coupon'),
                     'rows="10" cols="100"'
                 );
+                $mform->setType('coupon_recipients_manual', PARAM_RAW);
                 $mform->addRule('coupon_recipients_manual', get_string('required'), 'required', null, 'client');
                 $mform->addHelpButton('coupon_recipients_manual', 'label:coupon_recipients_txt', 'block_coupon');
                 $mform->setDefault('coupon_recipients_manual', 'E-mail,Gender,Name');
@@ -239,6 +247,16 @@ class ctpage extends baseform {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
+        if ($this->generatoroptions->generatormethod === 'manual') {
+            $this->manualrecipients = [];
+            $recipients = helper::get_recipients_from_csv($data['coupon_recipients_manual'] ?? '');
+            $validation = helper::validate_parsed_coupon_recipients($recipients);
+            if ($validation === true) {
+                $this->manualrecipients = $recipients;
+            } else {
+                $errors['coupon_recipients_manual'] = $validation;
+            }
+        }
         return $errors;
     }
 }

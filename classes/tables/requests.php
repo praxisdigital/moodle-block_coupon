@@ -39,6 +39,8 @@ namespace block_coupon\tables;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class requests extends base {
+    /** @var bool Show finalized requests that still need delivery. */
+    private bool $deliveries;
     /**
      * Filter for coupon display
      *
@@ -59,9 +61,10 @@ class requests extends base {
     /**
      * Create a new instance of the table
      */
-    public function __construct() {
+    public function __construct(bool $deliveries = false) {
         global $USER;
-        parent::__construct(__CLASS__ . '-' . $USER->id);
+        $this->deliveries = $deliveries;
+        parent::__construct(__CLASS__ . '-' . $USER->id . ($deliveries ? '-deliveries' : ''));
         $this->no_sorting('action');
         $this->sortable(true, 'timecreated', SORT_DESC);
         $this->strdelete = get_string('action:coupon:delete', 'block_coupon');
@@ -92,18 +95,18 @@ class requests extends base {
      * @param boolean $useinitialsbar
      */
     public function render($pagesize, $useinitialsbar = true) {
-        $columns = ['fullname', 'timecreated'];
+        $columns = ['fullname', 'displaybatchname', 'timecreated'];
         if ($this->is_downloading() == '') {
             $columns[] = 'action';
         }
         $this->define_table_columns($columns);
 
         // Generate SQL.
-        $fields = 'cu.id, cu.timecreated, cu.configuration, cu.userid, ' .
+        $fields = 'cu.id, cu.timecreated, cu.configuration, cu.userid, COALESCE(cu.batchname, cu.clientref) AS displaybatchname, ' .
                 \block_coupon\helper::get_all_user_name_fields(true, 'u') . ', NULL as action';
         $from = '{block_coupon_requests} cu ';
         $from .= 'JOIN {user} u ON cu.userid=u.id ';
-        $where = ['finalized = 0'];
+        $where = $this->deliveries ? ['cu.finalized = 1', 'cu.denied = 0', 'cu.deliverydata IS NOT NULL'] : ['cu.finalized = 0'];
         $params = [];
         // Add filtering rules.
         if (!empty($this->filtering)) {
@@ -116,6 +119,11 @@ class requests extends base {
 
         parent::set_sql($fields, $from, implode(' AND ', $where), $params);
         $this->out($pagesize, $useinitialsbar);
+    }
+
+    /** Render a batch name as plain text in the HTML table. */
+    public function col_displaybatchname($row) {
+        return $this->is_downloading() ? $row->displaybatchname : s($row->displaybatchname ?? '');
     }
 
     /**
@@ -140,6 +148,10 @@ class requests extends base {
      */
     public function col_action($row) {
         global $OUTPUT;
+        if ($this->deliveries) {
+            $url = new \moodle_url($this->baseurl, ['action' => 'resendrequest', 'itemid' => $row->id]);
+            return $OUTPUT->single_button($url, get_string('request:delivery:resend', 'block_coupon'), 'post');
+        }
         $actions = [];
 
         $deny = \html_writer::link(

@@ -4,6 +4,7 @@
 
 See CHANGES.md for the detailed change history.
 
+- 2026-11-25 (4.4.4.7, build 2026112500): Course and cohort coupon requests now use an optional Batch name. Administrators can edit it on acceptance, sort requests by name, and resend the original coupons from **Coupon requests → Failed deliveries**. Requesters can filter **My coupons** by the final Batch ID. The release also fixes coupon entry, manual recipient validation, and stale request-user deletion links.
 - 2026-11-16 (4.4.4.6): Fixed the request-user edit page, course search with an empty "Courses to show in courses dropdown" setting, accepting coupon requests, and the progress report for users who may only see their own coupons.
 - 2026-07-14: Reintroduced styling for the coupon block on the dashboard to restore the old layout. Added changelog to README.md.
 - 2026-06-25: Fixed the course report link so it points to the correct Moodle course path.

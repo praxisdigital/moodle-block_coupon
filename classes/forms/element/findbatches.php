@@ -97,7 +97,7 @@ class findbatches extends MoodleQuickForm_autocomplete {
         $ids = [];
         foreach ($values as $onevalue) {
             if (
-                !empty($onevalue) &&
+                (string) $onevalue !== '' &&
                 (!$this->optionExists($onevalue)) &&
                 ($onevalue !== '_qf__force_multiselect_submission')
             ) {
