@@ -11,6 +11,8 @@ Version 4.4.4.7 (build 2026112400)
 ** Batch names can be up to 255 characters on both forms and may include letters, digits, spaces, and dashes.
    Forward slashes (`/`) and backslashes (`\`) are rejected because the Batch ID is used in filenames. The final
    Batch ID, including any suffix, is also limited to 255 characters.
+** Fixed coupon redemption trying to redirect after rendering the form, manual coupon generation failing on
+   invalid recipient input, and stale coupon request-user deletion links causing record warnings (#19).
 
 Version 4.4.4.6 (build 2026111600)
 ** Fixed request-user edit page crashing: the findcourses and findcohorts form elements now accept null options

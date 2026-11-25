@@ -293,8 +293,16 @@ class requestadmin {
         $params = ['action' => 'deleteuser', 'itemid' => $itemid];
         $url = $this->get_url($params);
 
-        $instance = $DB->get_record('block_coupon_rusers', ['id' => $itemid]);
-        $user = \core_user::get_user($instance->userid);
+        $instance = $DB->get_record('block_coupon_rusers', ['id' => $itemid], '*', IGNORE_MISSING);
+        $user = $instance ? \core_user::get_user($instance->userid, '*', IGNORE_MISSING) : false;
+        if (!$user) {
+            redirect(
+                $redirect,
+                get_string('delete:requestuser:notfound', 'block_coupon'),
+                null,
+                \core\output\notification::NOTIFY_WARNING
+            );
+        }
 
         $options = [
             get_string('delete:requestuser:header', 'block_coupon', $user),

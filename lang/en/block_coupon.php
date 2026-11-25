@@ -298,6 +298,7 @@ $string['delete:requestuser:confirmmessage'] = 'Yes, I want to delete this user'
 $string['delete:requestuser:description'] = 'This will delete ability to request coupons for user <b>{$a->firstname} {$a->lastname}</b>.<br/>
 The process is irreversable, but you can always re-configure this user by re-adding him or her to the allowed users.';
 $string['delete:requestuser:header'] = 'Delete coupon request user';
+$string['delete:requestuser:notfound'] = 'This coupon request user could not be found. The link may be out of date.';
 $string['deletecertpage'] = 'Delete page';
 $string['deleteconfirm'] = 'Delete confirmation';
 $string['deletecoupons'] = 'Delete coupons';

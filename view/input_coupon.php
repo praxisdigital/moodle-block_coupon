@@ -47,7 +47,7 @@ $heading = get_string('view:input_coupon:heading', 'block_coupon');
 $page = couponpage::setup(
     'block_coupon_view_input_coupon',
     $title,
-    couponpage::get_view_url('inputcoupons.php'),
+    couponpage::get_view_url('input_coupon.php'),
     'block/coupon:inputcoupons',
     \context_system::instance(),
     [
@@ -57,12 +57,12 @@ $page = couponpage::setup(
     ]
 );
 
-// Include the form.
-try {
-    $mform = new validator();
-    if ($mform->is_cancelled()) {
-        redirect($redirect);
-    } else if ($data = $mform->get_data()) {
+$mform = new validator(new moodle_url($PAGE->url, ['redirect' => $redirect]));
+if ($mform->is_cancelled()) {
+    redirect($redirect);
+}
+if ($data = $mform->get_data()) {
+    try {
         // Get type processor.
         $typeproc = block_coupon\coupon\typebase::get_type_instance($data->coupon_code);
         // Perform assertions.
@@ -71,19 +71,14 @@ try {
         // Process the claim.
         // The base is to just claim, but various coupons might have their own processing.
         $typeproc->process_claim($USER->id);
-    } else {
-        echo $OUTPUT->header();
-        echo '<div class="block-coupon-container">';
-        $mform->display();
-        echo '</div>';
-        echo $OUTPUT->footer();
+    } catch (block_coupon\notificationexception $ne) {
+        $ne->notify();
+    } catch (block_coupon\exception $e) {
+        \core\notification::error($e->getMessage());
     }
-} catch (block_coupon\notificationexception $ne) {
-    // Add message to stack.
-    $ne->notify();
-} catch (block_coupon\exception $e) {
-    \core\notification::error($e->getMessage());
-} catch (\Exception $ex) {
-    \core\notification::error(get_string('err:coupon:generic', 'block_coupon'));
+    redirect($redirect);
 }
-redirect($redirect);
+
+echo $OUTPUT->header();
+echo html_writer::div($mform->render(), 'block-coupon-container');
+echo $OUTPUT->footer();

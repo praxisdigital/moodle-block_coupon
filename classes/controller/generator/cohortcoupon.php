@@ -388,9 +388,7 @@ class cohortcoupon {
                     $generatoroptions->csvdelimitername = 'comma'; // Forced!
                     $generatoroptions->senddate = $data->date_send_coupons_manual;
                     $generatoroptions->emailbody = $data->email_body_manual['text'];
-                    // We'll get users right away.
-                    $delimiter = helper::get_delimiter($generatoroptions->csvdelimitername);
-                    $generatoroptions->recipients = helper::get_recipients_from_csv($data->coupon_recipients_manual, $delimiter);
+                    $generatoroptions->recipients = $mform->get_manual_recipients();
                     // Set amount, otherwise the generator won't do anything.
                     $generatoroptions->amount = count($generatoroptions->recipients);
                     $nextpage = 8;

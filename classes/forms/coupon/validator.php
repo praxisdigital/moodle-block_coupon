@@ -71,14 +71,16 @@ class validator extends \moodleform {
         global $USER;
         $errors = parent::validation($data, $files);
 
-        // Get type processor.
-        $typeproc = \block_coupon\coupon\typebase::get_type_instance($data['coupon_code']);
+        if (empty($data['coupon_code']) || isset($errors['coupon_code'])) {
+            return $errors;
+        }
         try {
+            $typeproc = \block_coupon\coupon\typebase::get_type_instance($data['coupon_code']);
             // Assert not yet used.
             $typeproc->assert_not_claimed();
             // Assert specialized.
             $typeproc->assert_internal_checks($USER->id);
-        } catch (Exception $ex) {
+        } catch (\block_coupon\exception $ex) {
             $errors['coupon_code'] = $ex->getMessage();
         }
 

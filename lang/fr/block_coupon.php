@@ -376,4 +376,5 @@ $string['request:accept:deliveryfailed'] = 'Demande acceptée, mais les coupons 
 $string['privacy:metadata:block_coupon_requests:batchname'] = 'Nom du lot saisi par le demandeur';
 $string['privacy:metadata:block_coupon_requests:clientref'] = 'Référence client d’origine';
 $string['privacy:metadata:block_coupon:batchid'] = 'Identifiant final du lot du coupon';
+$string['delete:requestuser:notfound'] = 'Cet utilisateur autorisé à demander des coupons est introuvable. Le lien est peut-être obsolète.';
 $string['th:displaybatchname'] = 'Nom du lot';

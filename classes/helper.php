@@ -382,7 +382,7 @@ class helper {
      * Load recipients from a CSV string
      * @param string $recipientsstr
      * @param string $delimiter
-     * @return boolean|\stdClass
+     * @return array|false Parsed recipients, or false if the required columns are missing or a row is incomplete.
      */
     final public static function get_recipients_from_csv($recipientsstr, $delimiter = ',') {
         $recipients = [];
@@ -391,20 +391,21 @@ class helper {
         // Split up in rows.
         $expectedcolumns = ['e-mail', 'gender', 'name'];
         $recipientsstr = str_replace("\r", '', $recipientsstr);
-        if (!$csvdata = str_getcsv($recipientsstr, "\n")) {
-            return false;
-        }
+        $csvdata = explode("\n", trim($recipientsstr));
         // Split up in columns.
         foreach ($csvdata as &$row) {
             // Get the next row.
-            $row = str_getcsv($row, $delimiter);
+            if ($count > 0 && trim($row) === '') {
+                continue;
+            }
+            $row = str_getcsv($row, $delimiter, '"', '\\');
 
             // Check if we're looking at the first row.
             if ($count == 0) {
                 $expectedrow = [];
                 // Set the columns we'll need.
                 foreach ($row as $key => &$column) {
-                    $column = trim(strtolower($column));
+                    $column = trim(strtolower((string) $column));
                     if (!in_array($column, $expectedcolumns)) {
                         continue;
                     }
@@ -412,7 +413,7 @@ class helper {
                     $expectedrow[$key] = $column;
                 }
                 // If we're missing columns.
-                if (count($expectedcolumns) != count($expectedrow)) {
+                if (count($expectedcolumns) !== count($expectedrow) || array_diff($expectedcolumns, $expectedrow)) {
                     return false;
                 }
 
@@ -425,6 +426,9 @@ class helper {
                 continue;
             }
 
+            if (!isset($row[$namekey], $row[$emailkey], $row[$genderkey])) {
+                return false;
+            }
             $recipient = new \stdClass();
             $recipient->name = trim($row[$namekey]);
             $recipient->email = trim($row[$emailkey]);
@@ -443,10 +447,15 @@ class helper {
      * @return array|true true if valid, array or error messages if invalid
      */
     final public static function validate_coupon_recipients($csvdata, $delimiter) {
+        return self::validate_parsed_coupon_recipients(self::get_recipients_from_csv($csvdata, $delimiter));
+    }
+
+    /** Validate the parsed input before using it to generate coupons. */
+    public static function validate_parsed_coupon_recipients(array|false $recipients): string|bool {
         $error = false;
         $maxcoupons = get_config('block_coupon', 'max_coupons');
 
-        if (!$recipients = self::get_recipients_from_csv($csvdata, $delimiter)) {
+        if ($recipients === false) {
             // Required columns aren't found in the csv.
             $error = get_string('error:recipients-columns-missing', 'block_coupon', 'e-mail,gender,name');
         } else {
@@ -460,7 +469,9 @@ class helper {
                 // Lets run through the file to check on email addresses.
                 foreach ($recipients as $recipient) {
                     if (!filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
-                        $error = get_string('error:recipients-email-invalid', 'block_coupon', $recipient);
+                        $error = get_string('error:recipients-email-invalid', 'block_coupon', (object) [
+                            'email' => s($recipient->email),
+                        ]);
                     }
                 }
             }

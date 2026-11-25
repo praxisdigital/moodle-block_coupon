@@ -56,6 +56,7 @@ $string['request:accept:deliveryfailed'] = 'Aanvraag goedgekeurd, maar de coupon
 $string['privacy:metadata:block_coupon_requests:batchname'] = 'Batchnaam opgegeven door de aanvrager';
 $string['privacy:metadata:block_coupon_requests:clientref'] = 'Oorspronkelijke klantreferentie';
 $string['privacy:metadata:block_coupon:batchid'] = 'Definitieve batch-ID van de coupon';
+$string['delete:requestuser:notfound'] = 'Deze gebruiker voor couponverzoeken is niet gevonden. De link is mogelijk verouderd.';
 $string['th:displaybatchname'] = 'Batchnaam';
 $string['cohort'] = 'cohort';
 $string['confirm_coupons_sent_body'] = '
