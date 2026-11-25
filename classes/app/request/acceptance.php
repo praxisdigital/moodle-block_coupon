@@ -79,7 +79,15 @@ final class acceptance {
             [$delivered] = helper::mail_requested_coupons($user, $coupons, $options, $message);
         } catch (\Throwable $error) {
             // The request is already finalized. Record the failed delivery, not a second acceptance attempt.
-            error_log('block_coupon: request ' . $id . ' delivery failed: ' . $error->getMessage());
+            foreach ($couponids as $couponid) {
+                $DB->insert_record('block_coupon_errors', (object) [
+                    'couponid' => $couponid,
+                    'errortype' => 'email',
+                    'errormessage' => get_string('coupon:send:fail', 'block_coupon', s($error->getMessage())),
+                    'timecreated' => time(),
+                    'iserror' => 1,
+                ]);
+            }
             $delivered = false;
         }
         return ['batchid' => $options->batchid, 'delivered' => $delivered];

@@ -248,7 +248,7 @@ final class request_batch_test extends provider_testcase {
         file_put_contents($path, '%PDF');
 
         try {
-            files::require_download_access($options->batchid);
+            \block_coupon\app\batch\access::require_download($options->batchid);
             $this->setUser($owner);
             ob_start();
             try {
@@ -314,6 +314,7 @@ final class request_batch_test extends provider_testcase {
         } finally {
             files::delete_archive($path);
         }
+        $this->assertDirectoryDoesNotExist(dirname($path));
         $this->assertSame($batchid, name::next_available($batchid));
     }
 
@@ -327,8 +328,8 @@ final class request_batch_test extends provider_testcase {
         file_put_contents($first, '%PDF');
         file_put_contents($second, '%PDF');
         try {
-            $token = files::issue_token($first);
-            files::issue_token($second);
+            $token = \block_coupon\app\batch\download_token::issue($first);
+            \block_coupon\app\batch\download_token::issue($second);
             ob_start();
             try {
                 helper::download('Archive A', '24112026150000', false, $token);
@@ -341,6 +342,26 @@ final class request_batch_test extends provider_testcase {
         } finally {
             files::delete_archive($first);
             files::delete_archive($second);
+        }
+    }
+
+    /** Expired email grants are denied and pruned without removing the owner's archive. */
+    public function test_expired_delivery_token_is_pruned(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $token = bin2hex(random_bytes(32));
+        $relative = files::path('Expired? archive', '24112026150000', 'pdf', true);
+        $archive = $CFG->dataroot . '/' . $relative;
+        $metadata = dirname($archive) . '/.coupon-token-' . hash('sha256', basename($archive));
+        file_put_contents($archive, '%PDF');
+        file_put_contents($metadata, json_encode(['digest' => hash('sha256', $token), 'expires' => time() - 1]));
+        try {
+            $this->assertFalse(\block_coupon\app\batch\download_token::is_valid($archive, $token));
+            \block_coupon\app\batch\download_token::prune();
+            $this->assertFileDoesNotExist($metadata);
+            $this->assertFileExists($archive);
+        } finally {
+            files::delete_archive($archive);
         }
     }
 

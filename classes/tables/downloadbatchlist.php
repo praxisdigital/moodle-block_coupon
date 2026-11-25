@@ -161,16 +161,12 @@ class downloadbatchlist extends base {
      * @return string actions
      */
     public function col_action($row) {
-        global $CFG;
         $actions = [];
 
         global $PAGE;
         $renderer = $PAGE->get_renderer('block_coupon');
         $actions[] = $renderer->action_icon(
-            new \moodle_url(
-                $CFG->wwwroot . '/blocks/coupon/download.php',
-                ['bid' => $row->batchid, 't' => $row->tid]
-            ),
+            \block_coupon\app\batch\access::url($row->batchid, $row->tid),
             new \image_icon('i/down', $this->strdownload, 'moodle', ['class' => 'icon']),
             null,
             ['alt' => $this->strdownload, 'target' => '_new'],

@@ -66,6 +66,30 @@ final class helper_test extends \advanced_testcase {
         );
     }
 
+    /** Extended claim workflow notifications should be shown as field errors. */
+    public function test_used_coupon_notification_is_a_form_error(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        set_config('claimworkflow', 2, 'block_coupon');
+        $options = new generatoroptions();
+        $options->type = generatoroptions::COURSE;
+        $options->courses = [$this->getDataGenerator()->create_course()->id];
+        $options->amount = 1;
+        $generator = new generator();
+        $generator->generate_coupons($options);
+        $coupon = $DB->get_record('block_coupon', ['id' => $generator->get_generated_couponids()[0]], '*', MUST_EXIST);
+        $coupon->claimed = 1;
+        $coupon->userid = $this->getDataGenerator()->create_user()->id;
+        $DB->update_record('block_coupon', $coupon);
+
+        $form = new \block_coupon\forms\coupon\validator(new \moodle_url('/blocks/coupon/view/input_coupon.php'));
+        $this->assertSame(
+            ['coupon_code' => get_string('error:coupon_already_used_other', 'block_coupon')],
+            $form->validation(['coupon_code' => $coupon->submission_code], [])
+        );
+    }
+
     /**
      * Data provider for test_get_findcourses_dropdown_courseids.
      *

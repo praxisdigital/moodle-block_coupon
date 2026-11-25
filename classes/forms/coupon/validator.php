@@ -80,7 +80,7 @@ class validator extends \moodleform {
             $typeproc->assert_not_claimed();
             // Assert specialized.
             $typeproc->assert_internal_checks($USER->id);
-        } catch (\block_coupon\exception $ex) {
+        } catch (\block_coupon\exception | \block_coupon\notificationexception $ex) {
             $errors['coupon_code'] = $ex->getMessage();
         }
 

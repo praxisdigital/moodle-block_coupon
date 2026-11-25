@@ -29,56 +29,30 @@ final class files {
     /** @var string Directory for IDs that don't fit in the legacy filename. */
     private const EXTENDED_DIRECTORY = 'block_coupon_batch_files';
 
-    /** Require the batch owner or a user allowed to view all coupon reports. */
-    public static function require_download_access(string $batchid, ?string $archive = null, string $token = ''): void {
-        global $DB, $USER;
-
-        if (has_capability('block/coupon:viewallreports', \context_system::instance())) {
-            return;
-        }
-        if (isloggedin() && !isguestuser()) {
-            if ($archive !== null && preg_match('/\A[0-9a-f]{64}\z/', $token) && is_file(self::token_path($archive))) {
-                $digest = file_get_contents(self::token_path($archive));
-                if ($digest !== false && hash_equals($digest, hash('sha256', $token))) {
-                    return;
-                }
-            }
-            $storedid = $DB->get_field('block_coupon', 'batchid', ['batchid' => $batchid, 'ownerid' => $USER->id], IGNORE_MULTIPLE);
-            if (
-                $storedid === $batchid &&
-                !$DB->record_exists_select(
-                    'block_coupon',
-                    'batchid = ? AND (ownerid <> ? OR ownerid IS NULL)',
-                    [$batchid, $USER->id]
-                )
-            ) {
-                return;
-            }
-        }
-        throw new \required_capability_exception(\context_system::instance(), 'block/coupon:viewallreports', 'nopermissions', '');
-    }
-
-    /** Issue a link token for one archive, storing only its digest alongside the file. */
-    public static function issue_token(string $archive): string {
-        $token = bin2hex(random_bytes(32));
-        if (!is_file($archive) || file_put_contents(self::token_path($archive), hash('sha256', $token), LOCK_EX) !== 64) {
-            throw new \moodle_exception('cannotwritefile', 'error');
-        }
-        return $token;
-    }
-
     /** Remove the one-time archive and revoke any emailed link. */
     public static function delete_archive(string $archive): void {
-        $tokenpath = self::token_path($archive);
-        if (is_file($tokenpath)) {
-            unlink($tokenpath);
+        download_token::revoke($archive);
+        if (unlink($archive)) {
+            self::prune_empty_parents(dirname($archive));
         }
-        unlink($archive);
     }
 
-    /** Keep the token filename short even when the archive has a long name. */
-    private static function token_path(string $archive): string {
-        return dirname($archive) . '/.coupon-token-' . hash('sha256', basename($archive));
+    /** Return the full directory for encoded archives. */
+    public static function encoded_root(): string {
+        global $CFG;
+        return $CFG->dataroot . '/' . self::EXTENDED_DIRECTORY;
+    }
+
+    /** Remove empty encoded directories, without touching the root or other moodledata directories. */
+    public static function prune_empty_parents(string $path): void {
+        $root = self::encoded_root() . '/';
+        while (str_starts_with($path, $root)) {
+            // rmdir also checks atomically that no other archive exists in the directory.
+            if (!@rmdir($path)) {
+                break;
+            }
+            $path = dirname($path);
+        }
     }
 
     /** Return the relative path, preparing the directory if a writer needs it. */
@@ -128,15 +102,13 @@ final class files {
     }
 
     /** Reserve names while any downloadable artifact remains. */
-    public static function has_archive(string $batchid): bool {
+    public static function archive_names(): array {
         global $CFG;
-        $key = \core_text::strtolower($batchid);
+        $names = [];
         foreach (self::list_batches($CFG->dataroot) as $archive) {
-            if (\core_text::strtolower($archive->batchid) === $key) {
-                return true;
-            }
+            $names[\core_text::strtolower($archive->batchid)] = true;
         }
-        return false;
+        return $names;
     }
 
     /** Find generated files under moodledata and recover their batch IDs. */

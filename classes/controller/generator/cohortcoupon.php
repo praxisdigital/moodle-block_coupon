@@ -512,7 +512,7 @@ class cohortcoupon {
                     $coupons = $DB->get_records_list('block_coupon', 'id', $generator->get_generated_couponids());
                     [$rs, $batchid, $ts] = helper::mail_coupons($coupons, $generatoroptions, false, false);
 
-                    $dlurl = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', ['bid' => $batchid, 't' => $ts]);
+                    $dlurl = \block_coupon\app\batch\access::url($batchid, $ts);
                     $dllink = \html_writer::link($dlurl, get_string('here', 'block_coupon'));
                     if ($rs) {
                         $redirectmessage = get_string('coupons_generated', 'block_coupon', $dllink);

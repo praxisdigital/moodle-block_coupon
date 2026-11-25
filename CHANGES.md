@@ -8,9 +8,10 @@ Version 4.4.4.7 (build 2026112400)
 ** On acceptance, a blank Batch name keeps the generated Batch ID. If the chosen name is already in use, the next
    available numeric suffix is added automatically (for example, `PO-123`, `PO-123-2`, `PO-123-3`). The acceptance
    flow shows the final Batch ID, which appears in My coupons and can be found with the My Batch ID filter.
-** Batch names can be up to 255 characters on both forms and may include letters, digits, spaces, and dashes.
-   Forward slashes (`/`) and backslashes (`\`) are rejected because the Batch ID is used in filenames. The final
-   Batch ID, including any suffix, is also limited to 255 characters.
+** Batch names are plain text. Forward slashes (`/`), backslashes (`\`), and control characters are rejected.
+   Both the requested name and the final Batch ID, including any suffix, are limited to 255 characters.
+** Emailed download links for alternate recipients expire after seven days or when the archive is downloaded.
+   Batch owners can still access any remaining archive through Moodle.
 ** Fixed coupon redemption trying to redirect after rendering the form, manual coupon generation failing on
    invalid recipient input, and stale coupon request-user deletion links causing record warnings (#19).
 

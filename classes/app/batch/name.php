@@ -32,6 +32,9 @@ final class name {
     /** @var bool Whether this process already holds the batch write lock. */
     private static bool $locked = false;
 
+    /** @var array|null Archive names read once during this batch allocation. */
+    private static ?array $archives = null;
+
     /** Return the validation string key, or null for a valid optional name. */
     public static function error(string $value): ?string {
         if (strpbrk($value, '/\\') !== false || preg_match('/[\x00-\x1f\x7f]/', $value)) {
@@ -55,17 +58,23 @@ final class name {
     /** Check whether coupons or a remaining archive already use this ID. */
     public static function exists(string $value): bool {
         global $DB;
-        return $DB->record_exists('block_coupon', ['batchid' => $value]) || files::has_archive($value);
+        if ($DB->record_exists('block_coupon', ['batchid' => $value])) {
+            return true;
+        }
+        $archives = self::$locked ? (self::$archives ??= files::archive_names()) : files::archive_names();
+        return isset($archives[\core_text::strtolower($value)]);
     }
 
     /** Choose the first available ID. Call while holding the batch write lock. */
     public static function next_available(string $base): string {
-        $candidate = $base;
-        for ($number = 2; self::exists($candidate); $number++) {
-            $suffix = '-' . $number;
-            $candidate = \core_text::substr($base, 0, self::MAX_LENGTH - strlen($suffix)) . $suffix;
-        }
-        return $candidate;
+        return self::synchronise(static function () use ($base): string {
+            $candidate = $base;
+            for ($number = 2; self::exists($candidate); $number++) {
+                $suffix = '-' . $number;
+                $candidate = \core_text::substr($base, 0, self::MAX_LENGTH - strlen($suffix)) . $suffix;
+            }
+            return $candidate;
+        });
     }
 
     /** Serialize batch allocation through the end of the calling workflow's database writes. */
@@ -82,6 +91,7 @@ final class name {
         try {
             return $callback();
         } finally {
+            self::$archives = null;
             self::$locked = false;
             $lock->release();
         }

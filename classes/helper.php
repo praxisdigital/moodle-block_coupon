@@ -1214,10 +1214,7 @@ class helper {
 
         $from = \core_user::get_noreply_user();
 
-        $downloadurl = new \moodle_url(
-            $CFG->wwwroot . '/blocks/coupon/download.php',
-            ['bid' => $generatoroptions->batchid, 't' => $ts, 'token' => \block_coupon\app\batch\files::issue_token($archive)]
-        );
+        $downloadurl = \block_coupon\app\batch\access::url($generatoroptions->batchid, $ts, $archive);
         $a = new \stdClass();
         $a->fullname = fullname($user);
         $a->signoff = generate_email_signoff();
@@ -1669,7 +1666,7 @@ class helper {
         } else if (is_file($pdf)) {
             $filename = $pdf;
         } else {
-            \block_coupon\app\batch\files::require_download_access($batchid);
+            \block_coupon\app\batch\access::require_download($batchid);
             $a = (object) [
                 'batchid' => s($batchid),
                 'timeid' => $timeid,
@@ -1677,14 +1674,10 @@ class helper {
             throw new \block_coupon\exception('err:download-not-exists', '', $a);
         }
 
-        \block_coupon\app\batch\files::require_download_access($batchid, $filename, $token);
+        \block_coupon\app\batch\access::require_download($batchid, $filename, $token);
 
         if (!$dodl) {
-            $params = ['bid' => $batchid, 't' => $timeid, 'dl' => 1];
-            if ($token !== '') {
-                $params['token'] = $token;
-            }
-            $url = new \moodle_url($CFG->wwwroot . '/blocks/coupon/download.php', $params);
+            $url = \block_coupon\app\batch\access::url($batchid, $timeid, token: $token, download: true);
             $button = $OUTPUT->single_button($url, get_string('downloadcoupons:buttontext', 'block_coupon'), 'get');
             echo get_string('downloadcoupons:text', 'block_coupon', $button);
         } else {
@@ -1782,10 +1775,7 @@ class helper {
         if ($emailbody !== false) {
             $messagehtml = $emailbody;
         } else {
-            $downloadurl = new \moodle_url(
-                $CFG->wwwroot . '/blocks/coupon/download.php',
-                ['bid' => $generatoroptions->batchid, 't' => $ts, 'token' => \block_coupon\app\batch\files::issue_token($archive)]
-            );
+            $downloadurl = \block_coupon\app\batch\access::url($generatoroptions->batchid, $ts, $archive);
             $bodyparams = [
                 'fullname' => fullname($USER),
                 'signoff' => generate_email_signoff(),
